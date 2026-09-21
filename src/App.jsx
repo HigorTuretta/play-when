@@ -113,7 +113,7 @@ function App(){
   const [status,setStatus]=useState('home'),[game,setGame]=useState(null),[round,setRound]=useState(0),[roundData,setRoundData]=useState(null)
   const [ordered,setOrdered]=useState([]),[checked,setChecked]=useState(false),[correctOrder,setCorrectOrder]=useState([]),[roundHits,setRoundHits]=useState(0),[lastGain,setLastGain]=useState(0)
   const [score,setScore]=useState(0),[displayScore,setDisplayScore]=useState(0),displayScoreRef=useRef(0),[scoreGain,setScoreGain]=useState(null),[streak,setStreak]=useState(0)
-  const [results,setResults]=useState([])
+  const [results,setResults]=useState([]),[submitBusy,setSubmitBusy]=useState(false)
   const [onboardStep,setOnboardStep]=useState(-1),seenOnboardingRef=useRef(readOnboardingSeen())
   const [activeId,setActiveId]=useState(null),[activeSize,setActiveSize]=useState(null),[roundLoading,setRoundLoading]=useState(false),[loadProgress,setLoadProgress]=useState(0),[dustBurst,setDustBurst]=useState(null)
   const t=copy[language]
@@ -133,7 +133,7 @@ function App(){
     setTrackingEnabled(Boolean(nextUser))
     setUser(nextUser);setError('')
     if(nextUser){
-      try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setResults(saved.results||[]);setStatus('playing')}}}catch{setError(t.genericError)}
+      try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds,guest:saved.guest||saved.gameId?.startsWith('guest-')});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setResults(saved.results||[]);setStatus('playing')}}}catch{setError(t.genericError)}
     }else{setProfile(null);setDaily({plays:0,streak:0});setStatus('home');clearSession()}
     setAuthReady(true)
   }),[])
@@ -149,7 +149,7 @@ function App(){
     return()=>{alive=false;controller.abort()}
   },[status,game?.id,round])
 
-  useEffect(()=>{if(status!=='playing'||!game||!user)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,round,score,streak,results,finished:false})},[status,game,round,score,streak,results,user])
+  useEffect(()=>{if(status!=='playing'||!game||!user||game.guest)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,guest:false,round,score,streak,results,finished:false})},[status,game,round,score,streak,results,user])
   useEffect(()=>{const from=displayScoreRef.current,to=score;if(from===to){setDisplayScore(to);return}const duration=560,start=performance.now();let frame=0;const tick=(now)=>{const p=Math.min(1,(now-start)/duration),e=1-Math.pow(1-p,3),v=Math.round(from+(to-from)*e);displayScoreRef.current=v;setDisplayScore(v);if(p<1)frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[score])
 
   const handleLogin=async()=>{try{setError('');await signInWithGoogle();track('login',{method:'google'})}catch{setError(t.genericError)}}
@@ -187,22 +187,23 @@ function App(){
   const handleDragEnd=({active,over})=>{setActiveId(null);setActiveSize(null);if(checked||!over)return;const fallbackRect=over.rect;if(active.id!==over.id)setOrdered(items=>arrayMove(items,items.findIndex(i=>i.id===active.id),items.findIndex(i=>i.id===over.id)));triggerDustForCard(active.id,fallbackRect)}
 
   const submit=async()=>{
-    if(checked||!game)return
+    if(checked||!game||submitBusy)return
     try{
+      setSubmitBusy(true);setError('')
       const payload={roundId:game.roundIds[round],orderedIds:ordered.map(i=>i.id),streakBefore:streak}
-      const result=user?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
+      const result=user&&!game.guest?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
       const revealed=ordered.map(item=>({...item,year:result.years[item.id]}))
       setOrdered(revealed)
       setCorrectOrder(result.correctOrder);setRoundHits(result.hits);setLastGain(result.score);setChecked(true);setStreak(result.streakAfter)
       setResults(current=>[...current,{round,hits:result.hits,perfect:result.hits===ROUND_SIZE,ordered:revealed,correct:result.correctOrder}])
       if(result.score>0){setScore(v=>v+result.score);const id=Date.now();setScoreGain({id,value:result.score});setTimeout(()=>setScoreGain(c=>c?.id===id?null:c),1100)}
       track('round_submit',{round:round+1,hits:result.hits,score:result.score})
-    }catch{setError(t.genericError)}
+    }catch(error){console.error('Failed to submit round',error);setError(t.genericError)}finally{setSubmitBusy(false)}
   }
 
   const nextRound=async()=>{
     if(round<TOTAL_ROUNDS-1){setRound(v=>v+1);return}
-    if(!user){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
+    if(!user||game.guest){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
     try{
       const finalScore=await finishGame({uid:user.uid,gameId:game.id,score})
       setScore(finalScore);setStatus('finished');clearSession()
@@ -250,7 +251,7 @@ function App(){
           <div className="stat-card is-accent"><span>{t.statStreak}</span><strong>{user&&profile?daily.streak||0:0}</strong></div>
         </div>
         {results.length>0&&<ShareGrid results={results} score={score} t={t}/>}
-        {!user&&<div className="login-callout"><strong>{t.loginToSave}</strong><button className="primary small" onClick={handleLogin}>{t.signIn}</button></div>}
+        {(!user||game?.guest)&&<div className="login-callout"><strong>{t.loginToSave}</strong><button className="primary small" onClick={handleLogin}>{t.signIn}</button></div>}
         {results.length>0&&<ResultSummary results={results} language={language} t={t} displayYear={displayYear}/>}
         <div className="finish-actions">
           {limitReached?<div className="limit-message"><span className="limit-badge" aria-hidden="true">!</span><span>{t.completedToday}</span></div>
@@ -340,7 +341,7 @@ function App(){
       </section>}
       <section className="actions">
         <p>{checked?t.compareHint:t.dragHint}</p>
-        {!checked?<button className="primary" onClick={submit}>{t.submit} ✓</button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound} →</button>}
+        {!checked?<button className="primary" onClick={submit} disabled={submitBusy}>{t.submit} ✓</button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound} →</button>}
       </section>
     </>}
     <SiteFooter language={language} navigate={navigate}/><DustBurst burst={dustBurst}/>{modals}</main>

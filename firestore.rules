@@ -189,7 +189,11 @@ service cloud.firestore {
     }
 
     match /attempts/{attemptId} {
-      allow get: if signedIn() && resource.data.uid == request.auth.uid;
+      // Allow the owner to check whether a submission exists before creating
+      // it. This also works for a missing document, unlike a resource.data
+      // ownership check, and makes interrupted submissions safely retryable.
+      allow get: if signedIn()
+        && attemptId.matches(request.auth.uid + '_round-[0-9]{4}');
       allow list: if false;
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid', 'gameId', 'roundId', 'roundIndex', 'orderedIds', 'createdAt'])
@@ -208,7 +212,8 @@ service cloud.firestore {
     }
 
     match /roundCredits/{creditId} {
-      allow get: if signedIn() && resource.data.uid == request.auth.uid;
+      allow get: if signedIn()
+        && creditId.matches(request.auth.uid + '_round-[0-9]{4}');
       allow list: if false;
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid', 'gameId', 'roundId', 'roundIndex', 'hits', 'score', 'streakBefore', 'streakAfter', 'createdAt'])
