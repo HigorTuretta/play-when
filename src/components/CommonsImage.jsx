@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Camera, Clapperboard, Cpu, FlaskConical, Gamepad2, Globe2, Landmark, Music2, Rocket, Trophy, Wifi } from 'lucide-react'
 
-const CACHE_KEY = 'when-commons-cache-v1'
+// Bump this whenever the image resolver changes so an old, unrelated result is
+// never kept in the browser after a relevance fix.
+const CACHE_KEY = 'when-event-image-cache-v2'
 
 const categoryIcons = {
   'História': Landmark,
@@ -31,49 +33,41 @@ const writeCache = (cache) => {
   } catch {}
 }
 
-const stripHtml = (value = '') => {
-  if (!value) return ''
-  const node = document.createElement('div')
-  node.innerHTML = value
-  return (node.textContent || node.innerText || '').replace(/\s+/g, ' ').trim()
-}
-
-async function searchCommons(query, signal) {
+async function searchWikipedia(query, signal) {
   const params = new URLSearchParams({
     action: 'query',
     generator: 'search',
-    gsrsearch: `${query} filetype:bitmap`,
-    gsrnamespace: '6',
-    gsrlimit: '5',
-    prop: 'imageinfo',
-    iiprop: 'url|mime|extmetadata',
-    iiurlwidth: '720',
+    gsrsearch: query,
+    gsrnamespace: '0',
+    gsrlimit: '3',
+    prop: 'pageimages|info',
+    piprop: 'thumbnail|name',
+    pithumbsize: '720',
+    pilicense: 'any',
+    inprop: 'url',
+    redirects: '1',
     format: 'json',
     origin: '*',
   })
 
-  const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`, { signal })
-  if (!response.ok) throw new Error('commons-request-failed')
+  // Searching encyclopaedia articles first keeps the image tied to the event.
+  // A direct Commons file search often ranks files that merely share one word
+  // with the query (a ship for "SMS", for example).
+  const response = await fetch(`https://en.wikipedia.org/w/api.php?${params.toString()}`, { signal })
+  if (!response.ok) throw new Error('wikipedia-request-failed')
   const data = await response.json()
-  const pages = Object.values(data?.query?.pages || {})
+  const page = Object.values(data?.query?.pages || {})
+    .filter((candidate) => candidate.thumbnail?.source)
+    .sort((a, b) => (a.index ?? Number.MAX_SAFE_INTEGER) - (b.index ?? Number.MAX_SAFE_INTEGER))[0]
 
-  const candidates = pages
-    .map((page) => ({ page, info: page.imageinfo?.[0] }))
-    .filter(({ info }) => info?.thumburl && info?.mime?.startsWith('image/'))
-    .filter(({ info }) => !/svg|gif/i.test(info.mime || ''))
-
-  if (!candidates.length) return null
-  const { page, info } = candidates[0]
-  const meta = info.extmetadata || {}
-  const artist = stripHtml(meta.Artist?.value || meta.Credit?.value || '')
-  const license = stripHtml(meta.LicenseShortName?.value || meta.UsageTerms?.value || '')
+  if (!page) return null
 
   return {
-    src: info.thumburl,
-    pageUrl: info.descriptionurl,
-    title: page.title?.replace(/^File:/, '') || 'Wikimedia Commons',
-    artist: artist.slice(0, 90),
-    license: license.slice(0, 45),
+    src: page.thumbnail.source,
+    pageUrl: page.fullurl,
+    title: page.title || 'Wikipedia',
+    artist: page.title || '',
+    license: 'Wikipedia',
   }
 }
 
@@ -84,7 +78,7 @@ async function resolveCommonsImage(event, signal) {
   const cached = readCache()[cacheKey]
   if (cached?.src) return cached
 
-  const result = await searchCommons(event.imageQuery || event.title, signal)
+  const result = await searchWikipedia(event.imageQuery || event.titleEn || event.titlePt || event.title, signal)
   if (!result) return null
 
   const cache = readCache()
@@ -157,6 +151,8 @@ export default function CommonsImage({ event, checked = false, categoryLabel }) 
       setImage(cached)
       return undefined
     }
+
+    setImage(null)
 
     const controller = new AbortController()
     let mounted = true
