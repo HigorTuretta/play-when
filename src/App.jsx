@@ -89,6 +89,7 @@ function App(){
   const [daily,setDaily]=useState({plays:0}),[error,setError]=useState('')
   const [status,setStatus]=useState('home'),[game,setGame]=useState(null),[round,setRound]=useState(0),[roundData,setRoundData]=useState(null)
   const [ordered,setOrdered]=useState([]),[checked,setChecked]=useState(false),[correctOrder,setCorrectOrder]=useState([]),[roundHits,setRoundHits]=useState(0),[lastAward,setLastAward]=useState(0)
+  const [submitBusy,setSubmitBusy]=useState(false)
   const [score,setScore]=useState(0),[displayScore,setDisplayScore]=useState(0),displayScoreRef=useRef(0),[scoreGain,setScoreGain]=useState(null),[streak,setStreak]=useState(0)
   const [activeId,setActiveId]=useState(null),[activeSize,setActiveSize]=useState(null),[roundLoading,setRoundLoading]=useState(false),[loadProgress,setLoadProgress]=useState(0),[dustBurst,setDustBurst]=useState(null)
   const autoStartRef=useRef(false)
@@ -107,7 +108,7 @@ function App(){
     setTrackingEnabled(Boolean(nextUser))
     setUser(nextUser);setError('')
     if(nextUser){
-      try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setStatus('playing')}}}catch{setError(t.genericError)}
+      try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds,guest:saved.guest||saved.gameId?.startsWith('guest-')});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setStatus('playing')}}}catch{setError(t.genericError)}
     }else{setProfile(null);setDaily({plays:0});setStatus('home');clearSession()}
     setAuthReady(true)
   }),[])
@@ -123,7 +124,7 @@ function App(){
     return()=>{alive=false;controller.abort()}
   },[status,game?.id,round])
 
-  useEffect(()=>{if(status!=='playing'||!game||!user)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,round,score,streak,finished:false})},[status,game,round,score,streak,user])
+  useEffect(()=>{if(status!=='playing'||!game||!user||game.guest)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,guest:false,round,score,streak,finished:false})},[status,game,round,score,streak,user])
   useEffect(()=>{const from=displayScoreRef.current,to=score;if(from===to){setDisplayScore(to);return}const duration=520,start=performance.now();let frame=0;const tick=(now)=>{const p=Math.min(1,(now-start)/duration),e=1-Math.pow(1-p,3),v=Math.round(from+(to-from)*e);displayScoreRef.current=v;setDisplayScore(v);if(p<1)frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[score])
 
   const handleLogin=async()=>{try{setError('');await signInWithGoogle();track('login',{method:'google'})}catch{setError(t.genericError)}}
@@ -150,20 +151,21 @@ function App(){
   const handleDragEnd=({active,over})=>{setActiveId(null);setActiveSize(null);if(checked||!over)return;const fallbackRect=over.rect;if(active.id!==over.id)setOrdered(items=>arrayMove(items,items.findIndex(i=>i.id===active.id),items.findIndex(i=>i.id===over.id)));triggerDustForCard(active.id,fallbackRect)}
 
   const submit=async()=>{
-    if(checked||!game)return
+    if(checked||!game||submitBusy)return
     try{
+      setSubmitBusy(true);setError('')
       const payload={roundId:game.roundIds[round],orderedIds:ordered.map(i=>i.id),streakBefore:streak}
-      const result=user?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
+      const result=user&&!game.guest?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
       setOrdered(items=>items.map(item=>({...item,year:result.years[item.id]})))
       setCorrectOrder(result.correctOrder);setRoundHits(result.hits);setLastAward(result.score);setChecked(true);setStreak(result.streakAfter)
       if(result.score>0){setScore(v=>v+result.score);const id=Date.now();setScoreGain({id,value:result.score});setTimeout(()=>setScoreGain(c=>c?.id===id?null:c),1050)}
       track('round_submit',{round:round+1,hits:result.hits,score:result.score})
-    }catch{setError(t.genericError)}
+    }catch(error){console.error('Failed to submit round',error);setError(t.genericError)}finally{setSubmitBusy(false)}
   }
 
   const nextRound=async()=>{
     if(round<TOTAL_ROUNDS-1){setRound(v=>v+1);return}
-    if(!user){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
+    if(!user||game.guest){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
     try{const finalScore=await finishGame({uid:user.uid,gameId:game.id,score});setScore(finalScore);setStatus('finished');clearSession();setDaily(await getDailyState(user.uid));track('game_complete',{score:finalScore,mode:'account'})}catch{setError(t.genericError)}
   }
   const backHome=()=>{clearSession();setStatus('home');setGame(null);setRoundData(null);navigate('/')}
@@ -177,7 +179,7 @@ function App(){
 
   if(status==='home')return <main className="app-shell center-shell">{header}{error&&<div className="inline-error">{error}</div>}{user&&profile&&remaining===0?<section className="start-card"><div className="limit-message"><LockKeyhole size={19}/><span>{t.dailyLimit}</span></div></section>:<RoundLoader progress={0} language={language}/>}<SiteFooter language={language} navigate={navigate}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
 
-  return <main className="app-shell">{header}<section className="game-head"><div><p className="eyebrow">{t.round(round+1,TOTAL_ROUNDS)}</p><h1>{t.gameTitle}</h1><p className="subtitle">{t.gameSubtitle}</p></div><div className="game-head-right"><div className="streak-card"><span>{t.streak}</span><strong>{streak}x</strong></div><div className={`score-pill ${scoreGain?'is-gaining':''}`}><Sparkles size={16}/><span className="score-value">{displayScore}</span><span>{t.pointsShort}</span>{scoreGain&&<span key={scoreGain.id} className="score-float">+{scoreGain.value}</span>}</div></div></section><div className="progress-track"><div className="progress-value" style={{width:`${progress}%`}}/></div>{error&&<div className="inline-error">{error}</div>}{roundLoading||!roundData?<RoundLoader progress={loadProgress} language={language}/>:<><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={({active})=>{if(checked)return;setActiveId(active.id);const rect=active.rect.current.initial;if(rect)setActiveSize({width:rect.width})}} onDragCancel={()=>{setActiveId(null);setActiveSize(null)}} onDragEnd={handleDragEnd}><section className={`timeline-zone ${activeId?'is-sorting':''}`} aria-label={t.cardsAria}><div className="direction-label oldest">{t.oldest}</div><SortableContext items={ordered.map(i=>i.id)} strategy={rectSortingStrategy}><div className="cards-grid">{ordered.map((item,index)=><SortableCard key={item.id} item={item} index={index} checked={checked} correctOrder={correctOrder} move={move} language={language}/>)}</div></SortableContext><div className="direction-label newest">{t.newest}</div></section><DragOverlay adjustScale={false} dropAnimation={{duration:390,easing:'cubic-bezier(0.18, 0.92, 0.28, 1)',sideEffects:defaultDropAnimationSideEffects({styles:{active:{opacity:'0.15'}}})}}>{activeItem?<article className="timeline-card drag-overlay-card" style={{width:activeSize?.width||undefined}}><CardInner item={activeItem} checked={false} overlay language={language}/></article>:null}</DragOverlay></DndContext>{checked&&<section className={`feedback ${roundHits===ROUND_SIZE?'feedback-ok':roundHits>0?'feedback-partial':'feedback-bad'}`}><div className="feedback-icon">{roundHits===ROUND_SIZE?<Check size={22}/>:roundHits>0?roundHits:'!'}</div><div><strong>{roundHits===ROUND_SIZE?t.perfect:roundHits>0?t.partial(roundHits,ROUND_SIZE):t.none}</strong><span>{lastAward>0?t.award(lastAward):t.noAward}</span></div></section>}<section className="actions"><p>{checked?t.compareHint:t.dragHint}</p>{!checked?<button className="primary" onClick={submit}>{t.submit}<Check size={18}/></button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound}<ArrowRight size={18}/></button>}</section></>}<SiteFooter language={language} navigate={navigate}/><DustBurst burst={dustBurst}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
+  return <main className="app-shell">{header}<section className="game-head"><div><p className="eyebrow">{t.round(round+1,TOTAL_ROUNDS)}</p><h1>{t.gameTitle}</h1><p className="subtitle">{t.gameSubtitle}</p></div><div className="game-head-right"><div className="streak-card"><span>{t.streak}</span><strong>{streak}x</strong></div><div className={`score-pill ${scoreGain?'is-gaining':''}`}><Sparkles size={16}/><span className="score-value">{displayScore}</span><span>{t.pointsShort}</span>{scoreGain&&<span key={scoreGain.id} className="score-float">+{scoreGain.value}</span>}</div></div></section><div className="progress-track"><div className="progress-value" style={{width:`${progress}%`}}/></div>{error&&<div className="inline-error">{error}</div>}{roundLoading||!roundData?<RoundLoader progress={loadProgress} language={language}/>:<><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={({active})=>{if(checked)return;setActiveId(active.id);const rect=active.rect.current.initial;if(rect)setActiveSize({width:rect.width})}} onDragCancel={()=>{setActiveId(null);setActiveSize(null)}} onDragEnd={handleDragEnd}><section className={`timeline-zone ${activeId?'is-sorting':''}`} aria-label={t.cardsAria}><div className="direction-label oldest">{t.oldest}</div><SortableContext items={ordered.map(i=>i.id)} strategy={rectSortingStrategy}><div className="cards-grid">{ordered.map((item,index)=><SortableCard key={item.id} item={item} index={index} checked={checked} correctOrder={correctOrder} move={move} language={language}/>)}</div></SortableContext><div className="direction-label newest">{t.newest}</div></section><DragOverlay adjustScale={false} dropAnimation={{duration:390,easing:'cubic-bezier(0.18, 0.92, 0.28, 1)',sideEffects:defaultDropAnimationSideEffects({styles:{active:{opacity:'0.15'}}})}}>{activeItem?<article className="timeline-card drag-overlay-card" style={{width:activeSize?.width||undefined}}><CardInner item={activeItem} checked={false} overlay language={language}/></article>:null}</DragOverlay></DndContext>{checked&&<section className={`feedback ${roundHits===ROUND_SIZE?'feedback-ok':roundHits>0?'feedback-partial':'feedback-bad'}`}><div className="feedback-icon">{roundHits===ROUND_SIZE?<Check size={22}/>:roundHits>0?roundHits:'!'}</div><div><strong>{roundHits===ROUND_SIZE?t.perfect:roundHits>0?t.partial(roundHits,ROUND_SIZE):t.none}</strong><span>{lastAward>0?t.award(lastAward):t.noAward}</span></div></section>}<section className="actions"><p>{checked?t.compareHint:t.dragHint}</p>{!checked?<button className="primary" onClick={submit} disabled={submitBusy}>{t.submit}<Check size={18}/></button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound}<ArrowRight size={18}/></button>}</section></>}<SiteFooter language={language} navigate={navigate}/><DustBurst burst={dustBurst}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
 }
 
 export default App
