@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # These values are public identifiers intentionally embedded in the Vite bundle.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_GITHUB_URL"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
