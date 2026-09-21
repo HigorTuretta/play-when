@@ -140,7 +140,7 @@ export async function preloadCommonsImage(event, signal) {
   }
 }
 
-export default function CommonsImage({ event, checked = false, categoryLabel }) {
+export default function CommonsImage({ event, checked = false }) {
   const cacheKey = cacheKeyFor(event)
   const initial = useMemo(() => readCache()[cacheKey] || null, [cacheKey])
   const [image, setImage] = useState(initial)
@@ -186,7 +186,6 @@ export default function CommonsImage({ event, checked = false, categoryLabel }) 
         <div className="fallback-orbit orbit-a" />
         <div className="fallback-orbit orbit-b" />
         <Icon size={64} strokeWidth={1.7} />
-        <span>{categoryLabel || event.category}</span>
       </div>
     )
   }

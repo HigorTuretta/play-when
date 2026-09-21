@@ -81,7 +81,7 @@ function CardInner({item,checked,status='',overlay=false,index,move,correctPosit
   const t=copy[language], localized=textForEvent(item,language), accent=accentFor(item.category)
   return <>
     <div className="card-art" style={{'--accent':accent}}>
-      <CommonsImage event={item} checked={checked&&!overlay} categoryLabel={localized.category}/>
+      <CommonsImage event={item} checked={checked&&!overlay}/>
       <span className="art-scrim" aria-hidden="true"/>
       <span className="category-chip">{localized.category}</span>
       <span className="card-grip" aria-hidden="true"><GripVertical size={15}/></span>

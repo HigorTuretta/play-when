@@ -64,9 +64,9 @@ p { text-wrap: pretty; }
 @keyframes modalPop { from { opacity:0; transform:translateY(18px) scale(.96); } to { opacity:1; transform:none; } }
 @keyframes railDash { to { background-position:38px 0; } }
 @keyframes shuffleCard {
-  0%, 100% { transform:translate(0,0) rotate(0deg); }
-  30% { transform:translate(var(--lx), -18px) rotate(var(--lr)); }
-  60% { transform:translate(var(--lx), 0) rotate(var(--lr)); }
+  0%, 42% { transform:translateX(var(--lx)) rotate(var(--lr)) translateY(6px); }
+  56% { transform:translateX(0) rotate(0deg) translateY(-18px) scale(1.06); }
+  72%, 100% { transform:translateX(var(--lx)) rotate(var(--lr)) translateY(6px); }
 }
 @keyframes dustRing { 0% { opacity:0; transform:scale(.4); } 30% { opacity:1; } 100% { opacity:0; transform:scale(1.5); } }
 @keyframes dust1 { 0% { opacity:0; transform:translate3d(var(--dust-start-x),4px,0) scale(.2); } 16% { opacity:.9; } 100% { opacity:0; transform:translate3d(var(--dust-x),var(--dust-y),0) scale(var(--dust-scale)); } }
@@ -391,6 +391,7 @@ p { text-wrap: pretty; }
   box-shadow: 4px 5px 0 var(--ink);
   padding: 10px;
   transform-origin: 50% 110%;
+  transform: translateX(var(--lx)) rotate(var(--lr)) translateY(6px);
   animation: shuffleCard 1.7s cubic-bezier(.22,1,.36,1) infinite;
 }
 .shuffle-card i { display: block; width: 100%; height: 74px; border-radius: 9px; border: 1.5px solid var(--ink); }
@@ -662,7 +663,6 @@ p { text-wrap: pretty; }
   gap: 8px;
   color: rgba(255,253,247,.94);
 }
-.visual-fallback span { font-family: var(--display); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
 .fallback-orbit { position: absolute; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); }
 .orbit-a { width: 120px; height: 120px; }
 .orbit-b { width: 180px; height: 180px; }
