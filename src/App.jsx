@@ -108,7 +108,7 @@ function App(){
     setTrackingEnabled(Boolean(nextUser))
     setUser(nextUser);setError('')
     if(nextUser){
-      try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setStatus('playing')}}}catch{setError(t.genericError)}
+      try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds,guest:saved.guest||saved.gameId?.startsWith('guest-')});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setStatus('playing')}}}catch{setError(t.genericError)}
     }else{setProfile(null);setDaily({plays:0});setStatus('home');clearSession()}
     setAuthReady(true)
   }),[])
@@ -124,7 +124,7 @@ function App(){
     return()=>{alive=false;controller.abort()}
   },[status,game?.id,round])
 
-  useEffect(()=>{if(status!=='playing'||!game||!user)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,round,score,streak,finished:false})},[status,game,round,score,streak,user])
+  useEffect(()=>{if(status!=='playing'||!game||!user||game.guest)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,guest:false,round,score,streak,finished:false})},[status,game,round,score,streak,user])
   useEffect(()=>{const from=displayScoreRef.current,to=score;if(from===to){setDisplayScore(to);return}const duration=520,start=performance.now();let frame=0;const tick=(now)=>{const p=Math.min(1,(now-start)/duration),e=1-Math.pow(1-p,3),v=Math.round(from+(to-from)*e);displayScoreRef.current=v;setDisplayScore(v);if(p<1)frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[score])
 
   const handleLogin=async()=>{try{setError('');await signInWithGoogle();track('login',{method:'google'})}catch{setError(t.genericError)}}
@@ -155,7 +155,7 @@ function App(){
     try{
       setSubmitBusy(true);setError('')
       const payload={roundId:game.roundIds[round],orderedIds:ordered.map(i=>i.id),streakBefore:streak}
-      const result=user?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
+      const result=user&&!game.guest?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
       setOrdered(items=>items.map(item=>({...item,year:result.years[item.id]})))
       setCorrectOrder(result.correctOrder);setRoundHits(result.hits);setLastAward(result.score);setChecked(true);setStreak(result.streakAfter)
       if(result.score>0){setScore(v=>v+result.score);const id=Date.now();setScoreGain({id,value:result.score});setTimeout(()=>setScoreGain(c=>c?.id===id?null:c),1050)}
@@ -165,7 +165,7 @@ function App(){
 
   const nextRound=async()=>{
     if(round<TOTAL_ROUNDS-1){setRound(v=>v+1);return}
-    if(!user){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
+    if(!user||game.guest){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
     try{const finalScore=await finishGame({uid:user.uid,gameId:game.id,score});setScore(finalScore);setStatus('finished');clearSession();setDaily(await getDailyState(user.uid));track('game_complete',{score:finalScore,mode:'account'})}catch{setError(t.genericError)}
   }
   const backHome=()=>{clearSession();setStatus('home');setGame(null);setRoundData(null);navigate('/')}
