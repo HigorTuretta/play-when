@@ -99,6 +99,28 @@ service cloud.firestore {
         && request.resource.data.currentGameId is string
         && getAfter(/databases/$(database)/documents/users/$(uid)/games/$(request.resource.data.currentGameId)).data.uid == uid;
 
+      // Daily streak: credited once per day, after a game is completed. It may
+      // only step up by one, and only while the two-day window still holds;
+      // any longer gap has to restart the streak at 1.
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['streak', 'lastPlayedAt', 'updatedAt'])
+        && request.resource.data.lastPlayedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.streak is int
+        && (
+          (!('lastPlayedAt' in resource.data) && request.resource.data.streak == 1)
+          ||
+          ('lastPlayedAt' in resource.data
+            && resource.data.lastPlayedAt.date() != request.time.date()
+            && (
+              (request.time < resource.data.lastPlayedAt + duration.value(3, 'd')
+                && request.resource.data.streak == (('streak' in resource.data) ? resource.data.streak : 0) + 1)
+              ||
+              (request.time >= resource.data.lastPlayedAt + duration.value(3, 'd')
+                && request.resource.data.streak == 1)
+            ))
+        );
+
       allow update: if isOwner(uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['day', 'plays', 'currentGameId', 'updatedAt'])
         && request.resource.data.day == request.time
