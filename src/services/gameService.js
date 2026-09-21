@@ -21,6 +21,10 @@ const gameId = () => crypto.randomUUID()
 const roundIdFor = (n) => `round-${String(n).padStart(4, '0')}`
 const attemptIdFor = (uid, roundId) => `${uid}_${roundId}`
 const creditIdFor = (uid, roundId) => `${uid}_${roundId}`
+const submissionError = (stage, error) => new Error(
+  `${stage}: ${error?.code || error?.message || 'unknown-error'}`,
+  { cause: error },
+)
 
 function randomRoundIds() {
   const picked = new Set()
@@ -114,33 +118,66 @@ export async function submitGuestRound({ roundId, orderedIds, streakBefore }) {
 export async function submitRound({ uid, gameId, roundId, roundIndex, orderedIds, streakBefore }) {
   const attemptId = attemptIdFor(uid, roundId)
   const attemptRef = doc(db, 'attempts', attemptId)
+  let submittedOrder = orderedIds
 
-  await setDoc(attemptRef, {
-    uid,
-    gameId,
-    roundId,
-    roundIndex,
-    orderedIds,
-    createdAt: serverTimestamp(),
-  })
+  try {
+    await setDoc(attemptRef, {
+      uid,
+      gameId,
+      roundId,
+      roundIndex,
+      orderedIds,
+      createdAt: serverTimestamp(),
+    })
+  } catch (writeError) {
+    // Reads for missing documents were not allowed by the original production
+    // rules. Only try to resume after a create fails: an existing document can
+    // be read under both the old and current rules.
+    try {
+      const existingAttempt = await getDoc(attemptRef)
+      if (!existingAttempt.exists()) throw writeError
+      const attempt = existingAttempt.data()
+      if (attempt.gameId !== gameId || attempt.roundId !== roundId || attempt.roundIndex !== roundIndex) {
+        throw new Error('attempt-conflict')
+      }
+      submittedOrder = attempt.orderedIds
+    } catch (readError) {
+      if (readError === writeError) throw writeError
+      throw submissionError('attempt-write-failed', writeError)
+    }
+  }
 
   const answerSnap = await getDoc(doc(db, 'roundAnswers', roundId))
   if (!answerSnap.exists()) throw new Error('answer-not-found')
   const answer = answerSnap.data()
-  const result = calculateFromAnswer(orderedIds, answer, streakBefore)
+  const result = calculateFromAnswer(submittedOrder, answer, streakBefore)
 
   const creditRef = doc(db, 'roundCredits', creditIdFor(uid, roundId))
-  await setDoc(creditRef, {
-    uid,
-    gameId,
-    roundId,
-    roundIndex,
-    hits: result.hits,
-    score: result.score,
-    streakBefore,
-    streakAfter: result.streakAfter,
-    createdAt: serverTimestamp(),
-  })
+  try {
+    await setDoc(creditRef, {
+      uid,
+      gameId,
+      roundId,
+      roundIndex,
+      hits: result.hits,
+      score: result.score,
+      streakBefore,
+      streakAfter: result.streakAfter,
+      createdAt: serverTimestamp(),
+    })
+  } catch (writeError) {
+    try {
+      const existingCredit = await getDoc(creditRef)
+      if (!existingCredit.exists()) throw writeError
+      const credit = existingCredit.data()
+      if (credit.gameId !== gameId || credit.roundId !== roundId || credit.roundIndex !== roundIndex) {
+        throw new Error('credit-conflict')
+      }
+    } catch (readError) {
+      if (readError === writeError) throw writeError
+      throw submissionError('credit-write-failed', writeError)
+    }
+  }
 
   return { ...result, years: answer.years, correctOrder: answer.correctOrder }
 }
