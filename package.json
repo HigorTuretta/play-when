@@ -1,0 +1,26 @@
+{
+  "name": "tempo-certo",
+  "private": true,
+  "version": "6.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "seed:firestore": "node scripts/seed-firestore.mjs",
+    "validate:facts": "node scripts/validate-facts.mjs"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "firebase": "^12.19.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "firebase-admin": "^13.5.0",
+    "vite": "^6.0.5"
+  }
+}

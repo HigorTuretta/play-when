@@ -1,0 +1,11 @@
+{
+  "name": "Tempo Certo",
+  "short_name": "Tempo Certo",
+  "description": "Jogo diário de cronologia: coloque fatos históricos do mais antigo ao mais recente.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3efe4",
+  "theme_color": "#f3efe4",
+  "lang": "pt-BR",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

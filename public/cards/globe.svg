@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460">
+<rect width="640" height="460" fill="#5f7cff"/>
+<circle cx="70" cy="70" r="95" fill="#fff" opacity=".13"/><circle cx="565" cy="390" r="125" fill="#000" opacity=".06"/>
+<circle cx="320" cy="225" r="125" fill="#cce9ff" stroke="#1d1d1b" stroke-width="18"/><path d="M205 215c52-22 79-67 111-74 34-8 45 34 88 37 28 2 44 20 36 45-8 27-37 37-63 36-33-2-47 28-73 37-34 12-48-25-70-35-21-9-44-19-29-46z" fill="#7fc86e"/><path d="M320 100c-43 40-66 79-66 125 0 48 26 91 66 125M320 100c43 40 66 79 66 125 0 48-26 91-66 125M196 225h248" fill="none" stroke="#1d1d1b" stroke-width="12" opacity=".7"/>
+<rect x="24" y="24" width="116" height="38" rx="19" fill="#fff" stroke="#1d1d1b" stroke-width="5"/>
+<text x="82" y="49" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#1d1d1b">MUNDO</text>
+</svg>

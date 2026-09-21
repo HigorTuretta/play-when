@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460">
+<rect width="640" height="460" fill="#ff5c7d"/>
+<circle cx="70" cy="70" r="95" fill="#fff" opacity=".13"/><circle cx="565" cy="390" r="125" fill="#000" opacity=".06"/>
+<circle cx="320" cy="230" r="140" fill="none" stroke="#ffca72" stroke-width="48" opacity=".95"/><circle cx="320" cy="230" r="78" fill="#101010"/><path d="M165 175c78-84 222-91 310 3" fill="none" stroke="#fff0c2" stroke-width="16" stroke-linecap="round" opacity=".8"/>
+<rect x="24" y="24" width="116" height="38" rx="19" fill="#fff" stroke="#1d1d1b" stroke-width="5"/>
+<text x="82" y="49" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#1d1d1b">M87*</text>
+</svg>

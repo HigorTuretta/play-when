@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://tempo-certo-6ccc2.web.app/sitemap.xml

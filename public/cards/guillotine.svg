@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460">
+<rect width="640" height="460" fill="#9d5cff"/>
+<circle cx="70" cy="70" r="95" fill="#fff" opacity=".13"/><circle cx="565" cy="390" r="125" fill="#000" opacity=".06"/>
+<path d="M235 75v320M405 75v320M210 75h220M190 395h260" stroke="#1d1d1b" stroke-width="18" stroke-linecap="round"/><path d="M265 115h110l-55 105h-55z" fill="#ece8df" stroke="#1d1d1b" stroke-width="14"/><path d="M275 285h90" stroke="#1d1d1b" stroke-width="24" stroke-linecap="round"/>
+<rect x="24" y="24" width="116" height="38" rx="19" fill="#fff" stroke="#1d1d1b" stroke-width="5"/>
+<text x="82" y="49" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#1d1d1b">FRANÇA</text>
+</svg>

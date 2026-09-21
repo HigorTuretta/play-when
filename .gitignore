@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.firebase/
+.env
+.env.*
+!.env.example
+private-data/
+service-account*.json
+*.log
+.DS_Store
+.vscode/
+.idea/

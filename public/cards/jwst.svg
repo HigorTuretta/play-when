@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460">
+<rect width="640" height="460" fill="#1aa8ff"/>
+<circle cx="70" cy="70" r="95" fill="#fff" opacity=".13"/><circle cx="565" cy="390" r="125" fill="#000" opacity=".06"/>
+<path d="M320 90l70 40v80l-70 40-70-40v-80z" fill="#ffd95a" stroke="#1d1d1b" stroke-width="14"/><path d="M250 130l140 80M390 130l-140 80M320 90v160" stroke="#1d1d1b" stroke-width="10"/><path d="M250 280l-95 80M390 280l95 80M320 250v125" stroke="#1d1d1b" stroke-width="16" stroke-linecap="round"/>
+<rect x="24" y="24" width="116" height="38" rx="19" fill="#fff" stroke="#1d1d1b" stroke-width="5"/>
+<text x="82" y="49" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#1d1d1b">WEBB</text>
+</svg>

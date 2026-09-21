@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460">
+<rect width="640" height="460" fill="#f3b321"/>
+<circle cx="70" cy="70" r="95" fill="#fff" opacity=".13"/><circle cx="565" cy="390" r="125" fill="#000" opacity=".06"/>
+<rect x="205" y="82" width="230" height="286" rx="14" fill="#f4ead7" stroke="#1d1d1b" stroke-width="18"/><circle cx="320" cy="175" r="48" fill="#d7a77a"/><path d="M248 310c18-74 53-101 72-101s54 27 72 101" fill="#688260" stroke="#1d1d1b" stroke-width="14"/><path d="M275 142c10-28 36-45 70-40 28 4 44 20 48 47" fill="none" stroke="#1d1d1b" stroke-width="15" stroke-linecap="round"/>
+<rect x="24" y="24" width="116" height="38" rx="19" fill="#fff" stroke="#1d1d1b" stroke-width="5"/>
+<text x="82" y="49" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#1d1d1b">ARTE</text>
+</svg>

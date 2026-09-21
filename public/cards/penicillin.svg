@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 460">
+<rect width="640" height="460" fill="#ff5c7d"/>
+<circle cx="70" cy="70" r="95" fill="#fff" opacity=".13"/><circle cx="565" cy="390" r="125" fill="#000" opacity=".06"/>
+<rect x="250" y="90" width="140" height="280" rx="55" fill="#fff" stroke="#1d1d1b" stroke-width="18"/><path d="M250 230h140v85c0 30-24 55-55 55h-30c-30 0-55-24-55-55z" fill="#ffd1dc"/><circle cx="210" cy="160" r="22" fill="#fff"/><circle cx="445" cy="215" r="16" fill="#fff"/>
+<rect x="24" y="24" width="116" height="38" rx="19" fill="#fff" stroke="#1d1d1b" stroke-width="5"/>
+<text x="82" y="49" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#1d1d1b">PENICILINA</text>
+</svg>

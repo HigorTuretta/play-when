@@ -1,0 +1,241 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isGoogleUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validNickname(value) {
+      return value is string && value.size() >= 2 && value.size() <= 24;
+    }
+
+    function validCountry(value) {
+      return value is string && value.size() == 2;
+    }
+
+    function validRoundIds(ids) {
+      return ids is list && ids.size() == 6
+        && ids[0] != ids[1] && ids[0] != ids[2] && ids[0] != ids[3] && ids[0] != ids[4] && ids[0] != ids[5]
+        && ids[1] != ids[2] && ids[1] != ids[3] && ids[1] != ids[4] && ids[1] != ids[5]
+        && ids[2] != ids[3] && ids[2] != ids[4] && ids[2] != ids[5]
+        && ids[3] != ids[4] && ids[3] != ids[5]
+        && ids[4] != ids[5];
+    }
+
+    function validFourCardOrder(order, correct) {
+      return order is list && order.size() == 4 && correct is list && correct.size() == 4
+        && order[0] != order[1] && order[0] != order[2] && order[0] != order[3]
+        && order[1] != order[2] && order[1] != order[3] && order[2] != order[3]
+        && order[0] in correct && order[1] in correct && order[2] in correct && order[3] in correct;
+    }
+
+    function hitCount(order, correct) {
+      return (order[0] == correct[0] ? 1 : 0)
+        + (order[1] == correct[1] ? 1 : 0)
+        + (order[2] == correct[2] ? 1 : 0)
+        + (order[3] == correct[3] ? 1 : 0);
+    }
+
+    function expectedRoundScore(hits, streakBefore) {
+      return hits * 25 + (hits == 4 ? 50 + streakBefore * 20 : 0);
+    }
+
+    match /profiles/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+      allow create: if isOwner(uid) && isGoogleUser()
+        && request.resource.data.keys().hasOnly(['nickname', 'countryCode', 'createdAt', 'updatedAt'])
+        && validNickname(request.resource.data.nickname)
+        && validCountry(request.resource.data.countryCode)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /leaderboard/{uid} {
+      allow get: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 10;
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['nickname', 'countryCode', 'totalScore', 'gamesPlayed', 'updatedAt'])
+        && request.resource.data.totalScore == 0
+        && request.resource.data.gamesPlayed == 0
+        && request.resource.data.updatedAt == request.time
+        && getAfter(/databases/$(database)/documents/profiles/$(uid)).data.nickname == request.resource.data.nickname
+        && getAfter(/databases/$(database)/documents/profiles/$(uid)).data.countryCode == request.resource.data.countryCode;
+
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalScore', 'gamesPlayed', 'lastGameId', 'updatedAt'])
+        && request.resource.data.totalScore >= resource.data.totalScore
+        && request.resource.data.gamesPlayed == resource.data.gamesPlayed + 1
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.lastGameId is string
+        && getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.uid == uid
+        && getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.gameId == request.resource.data.lastGameId
+        && getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.createdAt == request.time
+        && request.resource.data.totalScore == resource.data.totalScore
+          + getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.score;
+
+      allow delete: if false;
+    }
+
+    match /users/{uid}/state/daily {
+      allow get: if isOwner(uid);
+      allow list: if false;
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['day', 'plays', 'currentGameId', 'updatedAt'])
+        && request.resource.data.day == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.plays == 1
+        && request.resource.data.currentGameId is string
+        && getAfter(/databases/$(database)/documents/users/$(uid)/games/$(request.resource.data.currentGameId)).data.uid == uid;
+
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['day', 'plays', 'currentGameId', 'updatedAt'])
+        && request.resource.data.day == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.currentGameId is string
+        && getAfter(/databases/$(database)/documents/users/$(uid)/games/$(request.resource.data.currentGameId)).data.uid == uid
+        && (
+          (resource.data.day.date() == request.time.date()
+            && resource.data.plays < 3
+            && request.resource.data.plays == resource.data.plays + 1)
+          ||
+          (resource.data.day.date() != request.time.date()
+            && request.resource.data.plays == 1)
+        );
+
+      allow delete: if false;
+    }
+
+    match /users/{uid}/games/{gameId} {
+      allow get: if isOwner(uid);
+      allow list: if isOwner(uid) && request.query.limit != null && request.query.limit <= 10;
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'roundIds', 'score', 'completed', 'createdAt', 'completedAt'])
+        && request.resource.data.uid == uid
+        && validRoundIds(request.resource.data.roundIds)
+        && request.resource.data.score == 0
+        && request.resource.data.completed == false
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.completedAt == null
+        && getAfter(/databases/$(database)/documents/users/$(uid)/state/daily).data.currentGameId == gameId
+        && !exists(/databases/$(database)/documents/attempts/$(uid + '_' + request.resource.data.roundIds[0]))
+        && !exists(/databases/$(database)/documents/attempts/$(uid + '_' + request.resource.data.roundIds[1]))
+        && !exists(/databases/$(database)/documents/attempts/$(uid + '_' + request.resource.data.roundIds[2]))
+        && !exists(/databases/$(database)/documents/attempts/$(uid + '_' + request.resource.data.roundIds[3]))
+        && !exists(/databases/$(database)/documents/attempts/$(uid + '_' + request.resource.data.roundIds[4]))
+        && !exists(/databases/$(database)/documents/attempts/$(uid + '_' + request.resource.data.roundIds[5]));
+
+      allow update: if isOwner(uid)
+        && resource.data.completed == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'completed', 'completedAt'])
+        && request.resource.data.completed == true
+        && request.resource.data.completedAt == request.time
+        && request.resource.data.score ==
+          get(/databases/$(database)/documents/roundCredits/$(uid + '_' + resource.data.roundIds[0])).data.score
+          + get(/databases/$(database)/documents/roundCredits/$(uid + '_' + resource.data.roundIds[1])).data.score
+          + get(/databases/$(database)/documents/roundCredits/$(uid + '_' + resource.data.roundIds[2])).data.score
+          + get(/databases/$(database)/documents/roundCredits/$(uid + '_' + resource.data.roundIds[3])).data.score
+          + get(/databases/$(database)/documents/roundCredits/$(uid + '_' + resource.data.roundIds[4])).data.score
+          + get(/databases/$(database)/documents/roundCredits/$(uid + '_' + resource.data.roundIds[5])).data.score;
+
+      allow delete: if false;
+    }
+
+    match /rounds/{roundId} {
+      allow get: if signedIn();
+      allow list, write: if false;
+    }
+
+    match /roundAnswers/{roundId} {
+      allow get: if signedIn()
+        && exists(/databases/$(database)/documents/attempts/$(request.auth.uid + '_' + roundId));
+      allow list, write: if false;
+    }
+
+    match /attempts/{attemptId} {
+      allow get: if signedIn() && resource.data.uid == request.auth.uid;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'gameId', 'roundId', 'roundIndex', 'orderedIds', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && attemptId == request.auth.uid + '_' + request.resource.data.roundId
+        && request.resource.data.roundIndex is int
+        && request.resource.data.roundIndex >= 0 && request.resource.data.roundIndex < 6
+        && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.completed == false
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.roundIds[request.resource.data.roundIndex] == request.resource.data.roundId
+        && validFourCardOrder(
+          request.resource.data.orderedIds,
+          get(/databases/$(database)/documents/roundAnswers/$(request.resource.data.roundId)).data.correctOrder
+        );
+      allow update, delete: if false;
+    }
+
+    match /roundCredits/{creditId} {
+      allow get: if signedIn() && resource.data.uid == request.auth.uid;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'gameId', 'roundId', 'roundIndex', 'hits', 'score', 'streakBefore', 'streakAfter', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && creditId == request.auth.uid + '_' + request.resource.data.roundId
+        && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/attempts/$(creditId)).data.gameId == request.resource.data.gameId
+        && get(/databases/$(database)/documents/attempts/$(creditId)).data.roundIndex == request.resource.data.roundIndex
+        && get(/databases/$(database)/documents/attempts/$(creditId)).data.roundId == request.resource.data.roundId
+        && request.resource.data.hits == hitCount(
+          get(/databases/$(database)/documents/attempts/$(creditId)).data.orderedIds,
+          get(/databases/$(database)/documents/roundAnswers/$(request.resource.data.roundId)).data.correctOrder
+        )
+        && request.resource.data.score == expectedRoundScore(request.resource.data.hits, request.resource.data.streakBefore)
+        && request.resource.data.streakAfter == (request.resource.data.hits == 4 ? request.resource.data.streakBefore + 1 : 0)
+        && (
+          (request.resource.data.roundIndex == 0 && request.resource.data.streakBefore == 0)
+          ||
+          (request.resource.data.roundIndex > 0
+            && request.resource.data.streakBefore == get(/databases/$(database)/documents/roundCredits/$(request.auth.uid + '_' + get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.roundIds[request.resource.data.roundIndex - 1])).data.streakAfter)
+        );
+      allow update, delete: if false;
+    }
+
+    match /scoreCredits/{creditId} {
+      allow read: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'gameId', 'score', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && creditId == request.auth.uid + '_' + request.resource.data.gameId
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.completed == true
+        && request.resource.data.score == getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.score;
+      allow update, delete: if false;
+    }
+
+    match /facts/{factId} {
+      allow read, write: if false;
+    }
+
+    match /factAnswers/{factId} {
+      allow read, write: if false;
+    }
+
+    match /config/{docId} {
+      allow get: if signedIn();
+      allow list, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
