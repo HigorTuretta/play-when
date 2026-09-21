@@ -187,8 +187,9 @@ function App(){
   const handleDragEnd=({active,over})=>{setActiveId(null);setActiveSize(null);if(checked||!over)return;const fallbackRect=over.rect;if(active.id!==over.id)setOrdered(items=>arrayMove(items,items.findIndex(i=>i.id===active.id),items.findIndex(i=>i.id===over.id)));triggerDustForCard(active.id,fallbackRect)}
 
   const submit=async()=>{
-    if(checked||!game)return
+    if(checked||!game||submitBusy)return
     try{
+      setSubmitBusy(true);setError('')
       const payload={roundId:game.roundIds[round],orderedIds:ordered.map(i=>i.id),streakBefore:streak}
       const result=user?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
       const revealed=ordered.map(item=>({...item,year:result.years[item.id]}))
@@ -197,7 +198,7 @@ function App(){
       setResults(current=>[...current,{round,hits:result.hits,perfect:result.hits===ROUND_SIZE,ordered:revealed,correct:result.correctOrder}])
       if(result.score>0){setScore(v=>v+result.score);const id=Date.now();setScoreGain({id,value:result.score});setTimeout(()=>setScoreGain(c=>c?.id===id?null:c),1100)}
       track('round_submit',{round:round+1,hits:result.hits,score:result.score})
-    }catch{setError(t.genericError)}
+    }catch(error){console.error('Failed to submit round',error);setError(t.genericError)}finally{setSubmitBusy(false)}
   }
 
   const nextRound=async()=>{
