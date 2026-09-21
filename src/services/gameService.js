@@ -114,33 +114,49 @@ export async function submitGuestRound({ roundId, orderedIds, streakBefore }) {
 export async function submitRound({ uid, gameId, roundId, roundIndex, orderedIds, streakBefore }) {
   const attemptId = attemptIdFor(uid, roundId)
   const attemptRef = doc(db, 'attempts', attemptId)
+  const existingAttempt = await getDoc(attemptRef)
+  let submittedOrder = orderedIds
 
-  await setDoc(attemptRef, {
-    uid,
-    gameId,
-    roundId,
-    roundIndex,
-    orderedIds,
-    createdAt: serverTimestamp(),
-  })
+  // A connection can fail after Firestore has accepted the attempt but before
+  // the rest of the submission finishes. Retrying must resume that attempt:
+  // attempting to overwrite it is (intentionally) rejected by the rules.
+  if (existingAttempt.exists()) {
+    const attempt = existingAttempt.data()
+    if (attempt.gameId !== gameId || attempt.roundId !== roundId || attempt.roundIndex !== roundIndex) {
+      throw new Error('attempt-conflict')
+    }
+    submittedOrder = attempt.orderedIds
+  } else {
+    await setDoc(attemptRef, {
+      uid,
+      gameId,
+      roundId,
+      roundIndex,
+      orderedIds,
+      createdAt: serverTimestamp(),
+    })
+  }
 
   const answerSnap = await getDoc(doc(db, 'roundAnswers', roundId))
   if (!answerSnap.exists()) throw new Error('answer-not-found')
   const answer = answerSnap.data()
-  const result = calculateFromAnswer(orderedIds, answer, streakBefore)
+  const result = calculateFromAnswer(submittedOrder, answer, streakBefore)
 
   const creditRef = doc(db, 'roundCredits', creditIdFor(uid, roundId))
-  await setDoc(creditRef, {
-    uid,
-    gameId,
-    roundId,
-    roundIndex,
-    hits: result.hits,
-    score: result.score,
-    streakBefore,
-    streakAfter: result.streakAfter,
-    createdAt: serverTimestamp(),
-  })
+  const existingCredit = await getDoc(creditRef)
+  if (!existingCredit.exists()) {
+    await setDoc(creditRef, {
+      uid,
+      gameId,
+      roundId,
+      roundIndex,
+      hits: result.hits,
+      score: result.score,
+      streakBefore,
+      streakAfter: result.streakAfter,
+      createdAt: serverTimestamp(),
+    })
+  }
 
   return { ...result, years: answer.years, correctOrder: answer.correctOrder }
 }
