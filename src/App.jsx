@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, closestCenter,
+  DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, TouchSensor, closestCenter,
   defaultDropAnimationSideEffects, useSensor, useSensors,
 } from '@dnd-kit/core'
 import {
@@ -27,6 +27,9 @@ import {
 } from './services/gameService'
 import { setTrackingEnabled, track } from './services/analyticsService'
 
+// Slot rects are measured once when a drag starts; re-measuring mid-drag picks
+// up the neighbours' in-flight transforms and makes the drop target lag.
+const MEASURING={droppable:{strategy:MeasuringStrategy.BeforeDragging}}
 const SESSION_KEY = 'when-firebase-session-v1'
 const ONBOARDING_KEY = 'when-onboarding-seen-v1'
 const GITHUB_URL = import.meta.env.VITE_GITHUB_URL || 'https://github.com/HigorTuretta/play-when'
@@ -100,7 +103,7 @@ function SortableCard({item,index,checked,correctOrder,move,language,displayYear
   const correctIndex=checked?correctOrder.indexOf(item.id):-1
   const status=!checked?'':correctIndex===index?'correct':'wrong'
   const animateLayoutChanges=(args)=>defaultAnimateLayoutChanges({...args,wasDragging:true})
-  const {attributes,listeners,setNodeRef,transform,transition,isDragging}=useSortable({id:item.id,disabled:checked,animateLayoutChanges,transition:{duration:280,easing:'cubic-bezier(.2,.9,.25,1)'}})
+  const {attributes,listeners,setNodeRef,transform,transition,isDragging}=useSortable({id:item.id,disabled:checked,animateLayoutChanges,transition:{duration:340,easing:'cubic-bezier(.22,1,.36,1)'}})
   const style={transform:CSS.Transform.toString(transform),transition,'--deal-delay':`${index*70}ms`}
   return <article ref={setNodeRef} style={style} data-card-id={item.id} className={`timeline-card ${status} ${isDragging?'is-dragging':''}`} {...attributes} {...listeners}><CardInner item={item} checked={checked} status={status} index={index} move={move} correctPosition={correctIndex+1} language={language} displayYear={displayYear}/></article>
 }
@@ -124,6 +127,7 @@ function App(){
   const progress=((round+(checked?1:0))/TOTAL_ROUNDS)*100
   const displayYear=(year)=>year<0?`${Math.abs(year)} ${t.bc}`:String(year)
 
+  const goHome=()=>{if(status!=='playing')setStatus('home');navigate('/')}
   const navigate=(next)=>{window.history.pushState({},'',next);setPath(next);window.scrollTo({top:0,behavior:'smooth'});track('page_view',{page_path:next})}
   useEffect(()=>{const fn=()=>setPath(currentPath());window.addEventListener('popstate',fn);return()=>window.removeEventListener('popstate',fn)},[])
   useEffect(()=>{document.documentElement.lang=language},[language])
@@ -142,14 +146,24 @@ function App(){
     if(status!=='playing'||!game?.roundIds?.[round])return
     let alive=true;const controller=new AbortController();setRoundLoading(true);setLoadProgress(0);setChecked(false);setCorrectOrder([]);setRoundHits(0);setLastGain(0)
     getRound(game.roundIds[round]).then(async data=>{
-      if(!alive)return;setRoundData(data);const shuffled=shuffle(data.cards);setOrdered(shuffled)
+      if(!alive)return;setRoundData(data)
+      const saved=readSession()?.roundState,restorable=saved&&saved.gameId===game.id&&saved.round===round&&saved.orderIds?.length===data.cards.length&&saved.orderIds.every(id=>data.cards.some(c=>c.id===id))
+      if(restorable){
+        const byId=Object.fromEntries(data.cards.map(c=>[c.id,c]))
+        setOrdered(saved.orderIds.map(id=>saved.checked?{...byId[id],year:saved.years?.[id]}:byId[id]))
+        if(saved.checked){setCorrectOrder(saved.correctOrder||[]);setRoundHits(saved.hits||0);setLastGain(saved.gain||0);setChecked(true)}
+      }else setOrdered(shuffle(data.cards))
       let completed=0;await Promise.allSettled(data.cards.map(async card=>{try{await preloadCommonsImage(card,controller.signal)}finally{completed+=1;if(alive)setLoadProgress(completed)}}))
       if(alive)setTimeout(()=>alive&&setRoundLoading(false),250)
     }).catch(()=>alive&&setError(t.genericError))
     return()=>{alive=false;controller.abort()}
   },[status,game?.id,round])
 
-  useEffect(()=>{if(status!=='playing'||!game||!user||game.guest)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,guest:false,round,score,streak,results,finished:false})},[status,game,round,score,streak,results,user])
+  useEffect(()=>{
+    if(status!=='playing'||!game||!user||game.guest||roundLoading||!ordered.length)return
+    const roundState={gameId:game.id,round,orderIds:ordered.map(i=>i.id),checked,correctOrder,hits:roundHits,gain:lastGain,years:checked?Object.fromEntries(ordered.map(i=>[i.id,i.year])):null}
+    saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,guest:false,round,score,streak,results,finished:false,roundState})
+  },[status,game,round,score,streak,results,user,ordered,checked,correctOrder,roundHits,lastGain,roundLoading])
   useEffect(()=>{const from=displayScoreRef.current,to=score;if(from===to){setDisplayScore(to);return}const duration=560,start=performance.now();let frame=0;const tick=(now)=>{const p=Math.min(1,(now-start)/duration),e=1-Math.pow(1-p,3),v=Math.round(from+(to-from)*e);displayScoreRef.current=v;setDisplayScore(v);if(p<1)frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[score])
 
   const handleLogin=async()=>{try{setError('');await signInWithGoogle();track('login',{method:'google'})}catch{setError(t.genericError)}}
@@ -219,8 +233,8 @@ function App(){
   const perfectRounds=results.filter((item)=>item.perfect).length
 
   const header=<header className="topbar">
-    <button className="brand brand-button" onClick={()=>{setStatus('home');navigate('/')}}><span className="brand-dot">W</span><span>{t.gameName}</span></button>
-    <nav className="main-nav"><button className={path==='/'?'active':''} onClick={()=>{setStatus('home');navigate('/')}}>{t.home}</button><button className={path==='/leaderboard'?'active':''} onClick={()=>navigate('/leaderboard')}>{t.leaderboard}</button></nav>
+    <button className="brand brand-button" onClick={goHome}><span className="brand-dot">W</span><span>{t.gameName}</span></button>
+    <nav className="main-nav"><button className={path==='/'?'active':''} onClick={goHome}>{t.home}</button><button className={path==='/leaderboard'?'active':''} onClick={()=>navigate('/leaderboard')}>{t.leaderboard}</button></nav>
     <div className="topbar-tools">
       {user&&profile&&daily.streak>0&&<StreakChip value={daily.streak} t={t}/>}
       <LanguageSwitch language={language} onChange={changeLanguage}/>
@@ -265,14 +279,8 @@ function App(){
   if(status==='home')return <main className="app-shell">{header}{error&&<div className="inline-error">{error}</div>}
     <section className="home">
       <div className="home-copy">
-        <p className="eyebrow">{t.dailyGame}</p>
         <h1>{t.startTitle}</h1>
         <p className="lede">{t.startCopy}</p>
-        <div className="home-pills">
-          <span className="info-pill"><i className="dot dot-green"/>{t.pill1}</span>
-          <span className="info-pill"><i className="dot dot-ember"/>{t.pill2}</span>
-          <span className="info-pill"><i className="dot dot-violet"/>{t.pill3}</span>
-        </div>
         {limitReached?<div className="limit-message"><span className="limit-badge" aria-hidden="true">!</span><span>{t.dailyLimit}</span></div>:
           <div className="home-start">
             <button className="primary big" onClick={beginGame}><span className="play-glyph" aria-hidden="true"/>{t.startGame}</button>
@@ -300,7 +308,7 @@ function App(){
     <div className="progress-track"><div className="progress-value" style={{width:`${progress}%`}}/></div>
     {error&&<div className="inline-error">{error}</div>}
     {roundLoading||!roundData?<RoundLoader progress={loadProgress} language={language}/>:<>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={({active})=>{if(checked)return;setActiveId(active.id);const rect=active.rect.current.initial;if(rect)setActiveSize({width:rect.width})}} onDragCancel={()=>{setActiveId(null);setActiveSize(null)}} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} measuring={MEASURING} collisionDetection={closestCenter} onDragStart={({active})=>{if(checked)return;setActiveId(active.id);const rect=active.rect.current.initial;if(rect)setActiveSize({width:rect.width})}} onDragCancel={()=>{setActiveId(null);setActiveSize(null)}} onDragEnd={handleDragEnd}>
         <section className={`timeline-zone ${activeId?'is-sorting':''}`} aria-label={t.cardsAria}>
           <SortableContext items={ordered.map(i=>i.id)} strategy={rectSortingStrategy}>
             <div className="cards-grid">{ordered.map((item,index)=><SortableCard key={item.id} item={item} index={index} checked={checked} correctOrder={correctOrder} move={move} language={language} displayYear={displayYear}/>)}</div>
@@ -313,11 +321,14 @@ function App(){
         </section>
         <DragOverlay adjustScale={false} dropAnimation={{duration:300,easing:'cubic-bezier(.2,.9,.25,1)',sideEffects:defaultDropAnimationSideEffects({styles:{active:{opacity:'0.15'}}})}}>{activeItem?<article className="timeline-card drag-overlay-card" style={{width:activeSize?.width||undefined}}><CardInner item={activeItem} checked={false} overlay language={language} displayYear={displayYear}/></article>:null}</DragOverlay>
       </DndContext>
-      {checked&&<section className="reveal-block">
-        <div className={`feedback ${roundHits===ROUND_SIZE?'feedback-ok':roundHits>0?'feedback-partial':'feedback-bad'}`}>
+      <section className={`actions ${checked?'is-checked':''}`}>
+        {checked?<div className={`feedback ${roundHits===ROUND_SIZE?'feedback-ok':roundHits>0?'feedback-partial':'feedback-bad'}`}>
           <div className="feedback-icon">{roundHits===ROUND_SIZE?'✓':roundHits>0?roundHits:'!'}</div>
           <div><strong>{roundHits===ROUND_SIZE?t.perfect:roundHits>0?t.partial(roundHits,ROUND_SIZE):t.none}</strong><span>{lastGain>0?t.award(lastGain):t.noAward}</span></div>
-        </div>
+        </div>:<p className="drag-hint">{t.dragHint}<span>{t.imageDisclaimer}</span></p>}
+        {!checked?<button className="primary" onClick={submit} disabled={submitBusy}>{t.submit} ✓</button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound} →</button>}
+      </section>
+      {checked&&<section className="reveal-block">
         <div className="comparison-panel">
           <p className="panel-label">{t.diffTitle}</p>
           <div className="comparison-rows">
@@ -339,10 +350,6 @@ function App(){
           </div>
         </div>
       </section>}
-      <section className="actions">
-        <p>{checked?t.compareHint:t.dragHint}</p>
-        {!checked?<button className="primary" onClick={submit} disabled={submitBusy}>{t.submit} ✓</button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound} →</button>}
-      </section>
     </>}
     <SiteFooter language={language} navigate={navigate}/><DustBurst burst={dustBurst}/>{modals}</main>
 }

@@ -24,9 +24,8 @@ export const categoryLabels = {
 
 export const copy = {
   'pt-BR': {
-    gameName:'When?', dailyGame:'Jogo diário de cronologia', startTitle:'Coloque a história na ordem certa.',
+    gameName:'When?', startTitle:'Coloque a história na ordem certa.',
     startCopy:'Seis rodadas, quatro cartas por rodada. Arraste cada acontecimento do mais antigo para o mais recente — o ano só aparece depois que você confirma.',
-    pill1:'500 fatos históricos', pill2:'6 rodadas por partida', pill3:'Sem login para jogar',
     todayPlays:'Partidas de hoje', remainingAttempts:(n)=>`${n} restante${n===1?'':'s'}`,
     startGame:'Começar partida',
     dailyLimit:'As 3 partidas de hoje já foram usadas. O limite reinicia amanhã — sua sequência continua se você voltar em até 2 dias.',
@@ -34,7 +33,7 @@ export const copy = {
     round:(c,t)=>`Rodada ${c} de ${t}`, gameTitle:'Sua noção de tempo está certa?', gameSubtitle:'Ordene do mais antigo para o mais recente.',
     streak:'sequência', today:'hoje', pointsShort:'pts', oldest:'mais antigo', newest:'mais recente', cardsAria:'Cartas para ordenar',
     moveLeft:'Mover para a esquerda', moveRight:'Mover para a direita', correctPosition:(p)=>`${p}º na ordem`, submit:'Confirmar ordem', nextRound:'Próxima rodada', seeResult:'Ver resultado',
-    dragHint:'Pegue uma carta e arraste. As outras abrem espaço automaticamente.', compareHint:'Sua ordem ficou preservada para você comparar com a linha do tempo real.',
+    dragHint:'Arraste as cartas para ordenar, do mais antigo ao mais recente.', imageDisclaimer:'As imagens são ilustrativas e podem não representar fielmente os fatos.', compareHint:'Sua ordem ficou preservada para você comparar com a linha do tempo real.',
     perfect:'Perfeito!', partial:(h,t)=>`Boa! ${h} de ${t} no lugar certo.`, none:'Ainda não.',
     award:(p)=>`+${p} pontos. Sua ordem ficou preservada para você comparar com a linha do tempo real.`, noAward:'Confira o ano e a posição correta em cada carta.',
     diffTitle:'Comparação da rodada', yourOrder:'Sua ordem', rightOrder:'Ordem correta',
@@ -51,7 +50,7 @@ export const copy = {
     skip:'Pular', next:'Próximo', gotIt:'Entendi, bora jogar',
     onboard:[
       { icon:'1', title:'Quatro cartas, uma linha do tempo', copy:'Cada rodada traz quatro acontecimentos embaralhados. A missão é simples de entender e difícil de acertar: ordenar do mais antigo para o mais recente.' },
-      { icon:'2', title:'Arraste — ou use as setas', copy:'Pegue uma carta e solte onde ela deve ficar; as outras abrem espaço sozinhas. No celular, os botões ◀ ▶ fazem o mesmo trabalho.' },
+      { icon:'2', title:'Arraste — ou use as setas', copy:'Arraste uma carta até onde ela deve ficar — as outras abrem espaço. No celular, use os botões ◀ ▶. As imagens são ilustrativas e podem não representar fielmente os fatos.' },
       { icon:'3', title:'Confirme e compare', copy:'Depois de confirmar, os anos aparecem sem reorganizar nada, para você comparar sua ordem com a real. Cartas certas, rodadas perfeitas e sequências valem pontos.' },
     ],
     leaderboard:'Ranking', leaderboardTitle:'Os 10 melhores viajantes do tempo', leaderboardCopy:'Ranking geral por pontuação acumulada.', noLeaderboard:'Ainda não há jogadores no ranking.', games:'partidas', points:'pts', you:'você',
@@ -60,9 +59,8 @@ export const copy = {
     sparkNote:'O jogo foi desenhado para operar dentro da camada gratuita do Firebase.',
   },
   en: {
-    gameName:'When?', dailyGame:'Daily chronology game', startTitle:'Put history in the right order.',
+    gameName:'When?', startTitle:'Put history in the right order.',
     startCopy:'Six rounds, four cards each. Drag every event from oldest to newest — the year only shows up after you confirm.',
-    pill1:'500 historical facts', pill2:'6 rounds per game', pill3:'No sign-in needed',
     todayPlays:"Games today", remainingAttempts:(n)=>`${n} left`,
     startGame:'Start game',
     dailyLimit:'You have used all 3 games for today. The limit resets tomorrow — your streak survives if you come back within 2 days.',
@@ -70,7 +68,7 @@ export const copy = {
     round:(c,t)=>`Round ${c} of ${t}`, gameTitle:'Is your sense of time right?', gameSubtitle:'Order the cards from oldest to newest.',
     streak:'streak', today:'today', pointsShort:'pts', oldest:'oldest', newest:'newest', cardsAria:'Cards to sort',
     moveLeft:'Move left', moveRight:'Move right', correctPosition:(p)=>`#${p} in order`, submit:'Confirm order', nextRound:'Next round', seeResult:'See result',
-    dragHint:'Pick up a card and drag it. The others make room automatically.', compareHint:'Your order stays in place so you can compare it with the real timeline.',
+    dragHint:'Drag the cards into order, from oldest to newest.', imageDisclaimer:'Images are illustrative and may not accurately depict the events.', compareHint:'Your order stays in place so you can compare it with the real timeline.',
     perfect:'Perfect!', partial:(h,t)=>`Nice! ${h} of ${t} in the right place.`, none:'Not quite.',
     award:(p)=>`+${p} points. Your order stays in place so you can compare it with the real timeline.`, noAward:'Check the year and correct position on each card.',
     diffTitle:'Round comparison', yourOrder:'Your order', rightOrder:'Correct order',
@@ -87,7 +85,7 @@ export const copy = {
     skip:'Skip', next:'Next', gotIt:'Got it, let’s play',
     onboard:[
       { icon:'1', title:'Four cards, one timeline', copy:'Every round deals four shuffled events. Easy to understand, hard to nail: sort them from oldest to newest.' },
-      { icon:'2', title:'Drag — or use the arrows', copy:'Pick up a card and drop it where it belongs; the others make room. On mobile the ◀ ▶ buttons do the same job.' },
+      { icon:'2', title:'Drag — or use the arrows', copy:'Drag a card to where it belongs — the others make room. On mobile, use the ◀ ▶ buttons. Images are illustrative and may not accurately depict the events.' },
       { icon:'3', title:'Confirm and compare', copy:'After confirming, the years appear without reshuffling anything, so you can compare your order with the real one. Right cards, perfect rounds and streaks all score.' },
     ],
     leaderboard:'Leaderboard', leaderboardTitle:'Top 10 time travelers', leaderboardCopy:'Global ranking by accumulated score.', noLeaderboard:'No players on the board yet.', games:'games', points:'pts', you:'you',
