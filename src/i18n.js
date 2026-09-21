@@ -1,4 +1,4 @@
-export const LANGUAGE_KEY = 'tempo-certo-language-v1'
+export const LANGUAGE_KEY = 'when-language-v1'
 
 export const languages = {
   'pt-BR': { short: 'PT', label: 'Português' },
@@ -24,7 +24,7 @@ export const categoryLabels = {
 
 export const copy = {
   'pt-BR': {
-    gameName:'tempo certo', dailyGame:'Jogo diário de cronologia', startTitle:'Coloque a história na ordem certa.',
+    gameName:'When?', dailyGame:'Jogo diário de cronologia', startTitle:'Coloque a história na ordem certa.',
     startCopy:'Seis rodadas. Quatro cartas por rodada. Arraste cada fato do mais antigo para o mais recente.',
     todayPlays:'Partidas de hoje', remainingAttempts:(n)=>`${n} partida${n===1?'':'s'} restante${n===1?'':'s'}`,
     startGame:'Começar partida', dailyLimit:'As 3 partidas de hoje já foram usadas. O limite reinicia amanhã.',
@@ -38,13 +38,13 @@ export const copy = {
     playAgain:(n)=>`Jogar novamente · ${n} restante${n===1?'':'s'}`, completedToday:'Você já completou suas 3 partidas de hoje.', backHome:'Voltar ao início',
     loadingAria:'Preparando a rodada', loaderPhrases:['Abrindo o arquivo do tempo…','Buscando imagens na história…','Embaralhando séculos…','Quase pronto para viajar no tempo…'], imagesReady:(r,t)=>`${r}/${t} imagens prontas`,
     language:'Idioma', developedBy:'Developed by', github:'GitHub', bc:'a.C.', signIn:'Entrar com Google', signOut:'Sair', account:'Conta',
-    loginRequired:'Entre com o Google para jogar, salvar sua pontuação e aparecer no ranking.', profileTitle:'Escolha seu nome no ranking', profileCopy:'Seu nome real e sua foto do Google não serão exibidos. Cadastre apenas um apelido.', nickname:'Nickname', nicknamePlaceholder:'Ex.: Turetta', saveNickname:'Salvar e continuar', nicknameHint:'2 a 24 caracteres.',
+    loginRequired:'Entre com o Google para salvar sua pontuação e aparecer no ranking.', guestReady:'Jogue sem login. Seus pontos só serão registrados se você entrar com o Google.', loginToSave:'Faça login para salvar seus pontos!', profileTitle:'Escolha seu nome no ranking', profileCopy:'Seu nome real e sua foto do Google não serão exibidos. Cadastre apenas um apelido.', nickname:'Nickname', nicknamePlaceholder:'Ex.: Turetta', saveNickname:'Salvar e continuar', nicknameHint:'2 a 24 caracteres.',
     leaderboard:'Leaderboard', leaderboardTitle:'Os 10 melhores viajantes do tempo', leaderboardCopy:'Ranking geral por pontuação acumulada.', noLeaderboard:'Ainda não há jogadores no ranking.', games:'partidas', points:'pontos', you:'você',
     privacy:'Política de Privacidade', terms:'Termos de Uso', home:'Jogo', loadingAccount:'Carregando sua conta…', genericError:'Algo deu errado. Tente novamente.',
     sparkNote:'O jogo foi desenhado para operar dentro da camada gratuita do Firebase.',
   },
   en: {
-    gameName:'tempo certo', dailyGame:'Daily chronology game', startTitle:'Put history in the right order.',
+    gameName:'When?', dailyGame:'Daily chronology game', startTitle:'Put history in the right order.',
     startCopy:'Six rounds. Four cards per round. Drag each event from oldest to newest.',
     todayPlays:"Today's games", remainingAttempts:(n)=>`${n} game${n===1?'':'s'} remaining`,
     startGame:'Start game', dailyLimit:"You've used all 3 games for today. The limit resets tomorrow.",
@@ -55,7 +55,7 @@ export const copy = {
     endGame:'Game over', finishGreat:'Your timeline instincts are sharp.', finishTry:'History still has a few surprises for you.', finishScore:(r,p)=>`You finished ${r} rounds with ${p} points.`, playAgain:(n)=>`Play again · ${n} remaining`, completedToday:"You've completed all 3 games for today.", backHome:'Back to start',
     loadingAria:'Preparing the round', loaderPhrases:['Opening the time archive…','Searching history for images…','Shuffling centuries…','Almost ready to travel through time…'], imagesReady:(r,t)=>`${r}/${t} images ready`,
     language:'Language', developedBy:'Developed by', github:'GitHub', bc:'BC', signIn:'Continue with Google', signOut:'Sign out', account:'Account',
-    loginRequired:'Sign in with Google to play, save your score, and join the leaderboard.', profileTitle:'Choose your leaderboard name', profileCopy:'Your Google name and photo are never shown. Pick only a nickname.', nickname:'Nickname', nicknamePlaceholder:'e.g. Turetta', saveNickname:'Save and continue', nicknameHint:'2 to 24 characters.',
+    loginRequired:'Sign in with Google to save your score and join the leaderboard.', guestReady:'Play without signing in. Your points are only recorded when you use Google.', loginToSave:'Sign in to save your points!', profileTitle:'Choose your leaderboard name', profileCopy:'Your Google name and photo are never shown. Pick only a nickname.', nickname:'Nickname', nicknamePlaceholder:'e.g. Turetta', saveNickname:'Save and continue', nicknameHint:'2 to 24 characters.',
     leaderboard:'Leaderboard', leaderboardTitle:'Top 10 time travelers', leaderboardCopy:'Global ranking by accumulated score.', noLeaderboard:'No players on the board yet.', games:'games', points:'points', you:'you',
     privacy:'Privacy Policy', terms:'Terms of Use', home:'Game', loadingAccount:'Loading your account…', genericError:'Something went wrong. Try again.', sparkNote:'The game is designed to stay within Firebase’s free tier.',
   },

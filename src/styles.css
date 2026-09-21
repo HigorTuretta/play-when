@@ -985,3 +985,15 @@ h1 {
 @media (max-width:640px){
   .auth-button{font-size:.78rem;padding:7px 9px}.language-switch{transform:scale(.94)}.leaderboard-row{grid-template-columns:34px 34px 1fr auto;padding:12px}.leaderboard-row .games-count{display:none}.leaderboard-row em{display:none}.leaderboard-row b{font-size:.82rem}.page-card{margin-top:28px}.site-footer{gap:8px;font-size:.78rem}
 }
+
+.save-score-callout {
+  margin: 4px 0 2px !important;
+  padding: 14px 18px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--yellow);
+  color: var(--ink) !important;
+  font-weight: 800;
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: rotate(-1deg);
+}

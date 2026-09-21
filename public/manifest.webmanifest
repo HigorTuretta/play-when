@@ -1,6 +1,6 @@
 {
-  "name": "Tempo Certo",
-  "short_name": "Tempo Certo",
+  "name": "When?",
+  "short_name": "When?",
   "description": "Jogo diário de cronologia: coloque fatos históricos do mais antigo ao mais recente.",
   "start_url": "/",
   "display": "standalone",

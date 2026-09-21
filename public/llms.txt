@@ -1,12 +1,14 @@
-# Tempo Certo
+# When?
 
-Tempo Certo is a bilingual PT-BR / English browser chronology game created by Turetta.
-Players receive six rounds per game, with four historical-event cards in each round, and must order them from oldest to newest.
-The game has a three-games-per-day limit per authenticated Google account and a global Top 10 leaderboard based on accumulated score.
+When? is a bilingual PT-BR / English browser chronology game created by Turetta. Its name is never translated.
+Players sort four historical-event cards from oldest to newest in each of six rounds.
+Guests can complete a game without signing in; guest attempts, scores, analytics, and personal data are not recorded. Only games played after Google sign-in are saved and eligible for the global Top 10 leaderboard. Authenticated accounts have a three-games-per-day limit.
 
 Canonical site: https://tempo-certo-6ccc2.web.app/
 Leaderboard: https://tempo-certo-6ccc2.web.app/leaderboard
 Privacy policy: https://tempo-certo-6ccc2.web.app/privacy
 Terms of use: https://tempo-certo-6ccc2.web.app/terms
 
-The public browser client does not receive event years until the player has submitted an immutable ordering for that round. Firebase Authentication, Cloud Firestore Security Rules, and separate public/private round documents are used to enforce this flow without a paid server runtime.
+Public round and answer documents support write-free guest play. Authenticated attempts and leaderboard credits are validated by Cloud Firestore Security Rules.
+
+Repository: https://github.com/HigorTuretta/play-when
