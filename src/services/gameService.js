@@ -5,6 +5,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase/client'
@@ -12,6 +13,10 @@ import { db } from '../firebase/client'
 export const TOTAL_ROUNDS = 6
 export const ROUND_SIZE = 4
 export const DAILY_LIMIT = 3
+// A streak survives a gap of up to two calendar days. Expressed in
+// milliseconds so the client computes exactly what firestore.rules validates
+// with `duration.value(3, 'd')` — a mismatch would only reject the write.
+export const STREAK_WINDOW_MS = 3 * 24 * 60 * 60 * 1000
 export const ROUND_POOL_SIZE = 2500
 export const POINTS_PER_CARD = 25
 export const PERFECT_BONUS = 50
@@ -34,12 +39,48 @@ export function startGuestGame() {
 
 export async function getDailyState(uid) {
   const snap = await getDoc(doc(db, 'users', uid, 'state', 'daily'))
-  if (!snap.exists()) return { plays: 0, day: null }
+  if (!snap.exists()) return { plays: 0, day: null, streak: 0, lastPlayedAt: null }
   const data = snap.data()
   const day = data.day?.toDate?.() || null
+  const lastPlayedAt = data.lastPlayedAt?.toDate?.() || null
   const now = new Date()
   const sameDay = day && day.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)
-  return sameDay ? { plays: data.plays || 0, day } : { plays: 0, day }
+  const streak = currentStreak(data.streak || 0, lastPlayedAt, now)
+  return { plays: sameDay ? data.plays || 0 : 0, day, streak, lastPlayedAt }
+}
+
+// The stored streak is only still valid while the window has not lapsed; once
+// it has, the number on the document is stale and the player is back to zero.
+export function currentStreak(streak, lastPlayedAt, now = new Date()) {
+  if (!streak || !lastPlayedAt) return 0
+  return now.getTime() - lastPlayedAt.getTime() < STREAK_WINDOW_MS ? streak : 0
+}
+
+export function nextStreak(streak, lastPlayedAt, now = new Date()) {
+  if (!lastPlayedAt) return 1
+  const sameDay = lastPlayedAt.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)
+  if (sameDay) return streak || 1
+  return now.getTime() - lastPlayedAt.getTime() < STREAK_WINDOW_MS ? (streak || 0) + 1 : 1
+}
+
+// Written after the game is credited, on its own, so a rejected streak write
+// can never take the score down with it.
+export async function creditDailyStreak(uid) {
+  const ref = doc(db, 'users', uid, 'state', 'daily')
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return 0
+  const data = snap.data()
+  const lastPlayedAt = data.lastPlayedAt?.toDate?.() || null
+  const now = new Date()
+  const stored = data.streak || 0
+
+  if (lastPlayedAt && lastPlayedAt.toISOString().slice(0, 10) === now.toISOString().slice(0, 10)) {
+    return stored
+  }
+
+  const streak = nextStreak(stored, lastPlayedAt, now)
+  await updateDoc(ref, { streak, lastPlayedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+  return streak
 }
 
 export async function startGame(uid) {

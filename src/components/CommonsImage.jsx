@@ -73,6 +73,10 @@ async function searchWikipedia(query, signal) {
 
 const cacheKeyFor = (event) => `event:${event.id}`
 
+// Thumbnails in the end-of-game summary reuse whatever the round already
+// resolved, so they never trigger a second round of network requests.
+export const getCachedImage = (event) => readCache()[cacheKeyFor(event)] || null
+
 async function resolveCommonsImage(event, signal) {
   const cacheKey = cacheKeyFor(event)
   const cached = readCache()[cacheKey]
