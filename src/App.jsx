@@ -21,12 +21,12 @@ import { copy, getInitialLanguage, languages, saveLanguage, textForEvent } from 
 import { observeAuth, signInWithGoogle, signOutUser } from './services/authService'
 import { createProfile, getProfile } from './services/userService'
 import {
-  DAILY_LIMIT, ROUND_SIZE, TOTAL_ROUNDS, finishGame, getDailyState, getRound, startGame, submitRound,
+  DAILY_LIMIT, ROUND_SIZE, TOTAL_ROUNDS, finishGame, getDailyState, getRound, startGame, startGuestGame, submitGuestRound, submitRound,
 } from './services/gameService'
-import { track } from './services/analyticsService'
+import { setTrackingEnabled, track } from './services/analyticsService'
 
-const SESSION_KEY = 'tempo-certo-firebase-session-v1'
-const GITHUB_URL = import.meta.env.VITE_GITHUB_URL || 'https://github.com/'
+const SESSION_KEY = 'when-firebase-session-v1'
+const GITHUB_URL = import.meta.env.VITE_GITHUB_URL || 'https://github.com/HigorTuretta/play-when'
 
 const accentByCategory = {
   História:'#9d5cff', Tecnologia:'#10bfa5', Ciência:'#ff5c7d', Espaço:'#1aa8ff', Invenções:'#ff7a18',
@@ -103,6 +103,7 @@ function App(){
   const changeLanguage=(next)=>{if(!languages[next])return;setLanguage(next);saveLanguage(next)}
 
   useEffect(()=>observeAuth(async(nextUser)=>{
+    setTrackingEnabled(Boolean(nextUser))
     setUser(nextUser);setError('')
     if(nextUser){
       try{const p=await getProfile(nextUser.uid);setProfile(p);if(p){setDaily(await getDailyState(nextUser.uid));const saved=readSession();if(saved?.uid===nextUser.uid&&!saved.finished){setGame({id:saved.gameId,roundIds:saved.roundIds});setRound(saved.round||0);setScore(saved.score||0);displayScoreRef.current=saved.score||0;setDisplayScore(saved.score||0);setStreak(saved.streak||0);setStatus('playing')}}}catch{setError(t.genericError)}
@@ -121,7 +122,7 @@ function App(){
     return()=>{alive=false;controller.abort()}
   },[status,game?.id,round])
 
-  useEffect(()=>{if(status!=='playing'||!game)return;saveSession({uid:user?.uid,gameId:game.id,roundIds:game.roundIds,round,score,streak,finished:false})},[status,game,round,score,streak,user?.uid])
+  useEffect(()=>{if(status!=='playing'||!game||!user)return;saveSession({uid:user.uid,gameId:game.id,roundIds:game.roundIds,round,score,streak,finished:false})},[status,game,round,score,streak,user])
   useEffect(()=>{const from=displayScoreRef.current,to=score;if(from===to){setDisplayScore(to);return}const duration=520,start=performance.now();let frame=0;const tick=(now)=>{const p=Math.min(1,(now-start)/duration),e=1-Math.pow(1-p,3),v=Math.round(from+(to-from)*e);displayScoreRef.current=v;setDisplayScore(v);if(p<1)frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[score])
 
   const handleLogin=async()=>{try{setError('');await signInWithGoogle();track('login',{method:'google'})}catch{setError(t.genericError)}}
@@ -129,8 +130,8 @@ function App(){
   const handleLogout=async()=>{await signOutUser();navigate('/')}
 
   const beginGame=async()=>{
-    if(!user){await handleLogin();return}if(!profile)return
-    try{setError('');const fresh=await getDailyState(user.uid);if(fresh.plays>=DAILY_LIMIT){setDaily(fresh);return}const created=await startGame(user.uid);setDaily({plays:fresh.plays+1});setGame(created);setRound(0);setScore(0);displayScoreRef.current=0;setDisplayScore(0);setStreak(0);setStatus('playing');track('game_start',{daily_play:fresh.plays+1})}catch(e){if(e?.message==='daily-limit')setDaily({plays:DAILY_LIMIT});else setError(t.genericError)}
+    if(user&&!profile)return
+    try{setError('');let created;if(user){const fresh=await getDailyState(user.uid);if(fresh.plays>=DAILY_LIMIT){setDaily(fresh);return}created=await startGame(user.uid);setDaily({plays:fresh.plays+1});track('game_start',{daily_play:fresh.plays+1,mode:'account'})}else{created=startGuestGame();track('game_start',{mode:'guest'})}setGame(created);setRound(0);setScore(0);displayScoreRef.current=0;setDisplayScore(0);setStreak(0);setStatus('playing')}catch(e){if(e?.message==='daily-limit')setDaily({plays:DAILY_LIMIT});else setError(t.genericError)}
   }
 
   const move=(from,to)=>{if(checked||to<0||to>=ordered.length)return;setOrdered(items=>arrayMove(items,from,to))}
@@ -138,9 +139,10 @@ function App(){
   const handleDragEnd=({active,over})=>{setActiveId(null);setActiveSize(null);if(checked||!over)return;const fallbackRect=over.rect;if(active.id!==over.id)setOrdered(items=>arrayMove(items,items.findIndex(i=>i.id===active.id),items.findIndex(i=>i.id===over.id)));triggerDustForCard(active.id,fallbackRect)}
 
   const submit=async()=>{
-    if(checked||!user||!game)return
+    if(checked||!game)return
     try{
-      const result=await submitRound({uid:user.uid,gameId:game.id,roundId:game.roundIds[round],roundIndex:round,orderedIds:ordered.map(i=>i.id),streakBefore:streak})
+      const payload={roundId:game.roundIds[round],orderedIds:ordered.map(i=>i.id),streakBefore:streak}
+      const result=user?await submitRound({...payload,uid:user.uid,gameId:game.id,roundIndex:round}):await submitGuestRound(payload)
       setOrdered(items=>items.map(item=>({...item,year:result.years[item.id]})))
       setCorrectOrder(result.correctOrder);setRoundHits(result.hits);setLastAward(result.score);setChecked(true);setStreak(result.streakAfter)
       if(result.score>0){setScore(v=>v+result.score);const id=Date.now();setScoreGain({id,value:result.score});setTimeout(()=>setScoreGain(c=>c?.id===id?null:c),1050)}
@@ -150,18 +152,19 @@ function App(){
 
   const nextRound=async()=>{
     if(round<TOTAL_ROUNDS-1){setRound(v=>v+1);return}
-    try{const finalScore=await finishGame({uid:user.uid,gameId:game.id,score});setScore(finalScore);setStatus('finished');clearSession();setDaily(await getDailyState(user.uid));track('game_complete',{score:finalScore})}catch{setError(t.genericError)}
+    if(!user){setStatus('finished');clearSession();track('game_complete',{score,mode:'guest'});return}
+    try{const finalScore=await finishGame({uid:user.uid,gameId:game.id,score});setScore(finalScore);setStatus('finished');clearSession();setDaily(await getDailyState(user.uid));track('game_complete',{score:finalScore,mode:'account'})}catch{setError(t.genericError)}
   }
   const backHome=()=>{clearSession();setStatus('home');setGame(null);setRoundData(null);navigate('/')}
 
-  const header=<header className="topbar"><button className="brand brand-button" onClick={()=>{setStatus('home');navigate('/')}}><span className="brand-dot">T</span><span>{t.gameName}</span></button><nav className="main-nav"><button className={path==='/'?'active':''} onClick={()=>navigate('/')}>{t.home}</button><button className={path==='/leaderboard'?'active':''} onClick={()=>navigate('/leaderboard')}>{t.leaderboard}</button></nav><div className="topbar-tools"><LanguageSwitch language={language} onChange={changeLanguage}/><AuthControls user={user} profile={profile} onLogin={handleLogin} onLogout={handleLogout} t={t}/></div></header>
+  const header=<header className="topbar"><button className="brand brand-button" onClick={()=>{setStatus('home');navigate('/')}}><span className="brand-dot">W</span><span>{t.gameName}</span></button><nav className="main-nav"><button className={path==='/'?'active':''} onClick={()=>navigate('/')}>{t.home}</button><button className={path==='/leaderboard'?'active':''} onClick={()=>navigate('/leaderboard')}>{t.leaderboard}</button></nav><div className="topbar-tools"><LanguageSwitch language={language} onChange={changeLanguage}/><AuthControls user={user} profile={profile} onLogin={handleLogin} onLogout={handleLogout} t={t}/></div></header>
 
   if(!authReady)return <main className="app-shell center-shell"><RoundLoader progress={2} language={language}/></main>
   if(path==='/leaderboard'||path==='/privacy'||path==='/terms')return <main className="app-shell">{header}{path==='/leaderboard'?<LeaderboardPage t={t} currentUid={user?.uid}/>:<LegalPage type={path==='/privacy'?'privacy':'terms'} language={language}/>}<SiteFooter language={language} navigate={navigate}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
 
-  if(status==='finished')return <main className="app-shell center-shell">{header}<section className="finish-card"><div className="finish-icon"><Trophy size={40}/></div><p className="eyebrow">{t.endGame}</p><h1>{score>=620?t.finishGreat:t.finishTry}</h1><p>{t.finishScore(TOTAL_ROUNDS,score)}</p><div className="finish-actions">{remaining>0?<button className="primary big" onClick={beginGame}><Play size={18}/>{t.playAgain(remaining)}</button>:<div className="limit-message"><Clock3 size={19}/><span>{t.completedToday}</span></div>}<button className="secondary" onClick={backHome}>{t.backHome}</button></div></section><SiteFooter language={language} navigate={navigate}/></main>
+  if(status==='finished')return <main className="app-shell center-shell">{header}<section className="finish-card"><div className="finish-icon"><Trophy size={40}/></div><p className="eyebrow">{t.endGame}</p><h1>{score>=620?t.finishGreat:t.finishTry}</h1><p>{t.finishScore(TOTAL_ROUNDS,score)}</p><div className="finish-actions">{!user?<><p className="save-score-callout">{t.loginToSave}</p><button className="primary big" onClick={handleLogin}><LockKeyhole size={18}/>{t.signIn}</button></>:remaining>0?<button className="primary big" onClick={beginGame}><Play size={18}/>{t.playAgain(remaining)}</button>:<div className="limit-message"><Clock3 size={19}/><span>{t.completedToday}</span></div>}<button className="secondary" onClick={backHome}>{t.backHome}</button></div></section><SiteFooter language={language} navigate={navigate}/></main>
 
-  if(status==='home')return <main className="app-shell center-shell">{header}<section className="start-card"><p className="eyebrow">{t.dailyGame}</p><h1>{t.startTitle}</h1><p className="start-copy">{t.startCopy}</p>{!user?<div className="login-callout"><LockKeyhole size={20}/><span>{t.loginRequired}</span></div>:<div className="daily-meter"><div><span>{t.todayPlays}</span><strong>{daily.plays||0}/{DAILY_LIMIT}</strong></div><div className="attempt-dots">{Array.from({length:DAILY_LIMIT}).map((_,i)=><span key={i} className={i<(daily.plays||0)?'used':''}/>)}</div></div>}{error&&<div className="inline-error">{error}</div>}{remaining>0?<button className="primary big start-button" onClick={beginGame}><Play size={18} fill="currentColor"/>{user?t.startGame:t.signIn}</button>:<div className="limit-message"><LockKeyhole size={19}/><span>{t.dailyLimit}</span></div>}<p className="small-note">{t.bankNote}</p></section><SiteFooter language={language} navigate={navigate}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
+  if(status==='home')return <main className="app-shell center-shell">{header}<section className="start-card"><p className="eyebrow">{t.dailyGame}</p><h1>{t.startTitle}</h1><p className="start-copy">{t.startCopy}</p>{!user?<div className="login-callout"><Play size={20}/><span>{t.guestReady}</span></div>:<div className="daily-meter"><div><span>{t.todayPlays}</span><strong>{daily.plays||0}/{DAILY_LIMIT}</strong></div><div className="attempt-dots">{Array.from({length:DAILY_LIMIT}).map((_,i)=><span key={i} className={i<(daily.plays||0)?'used':''}/>)}</div></div>}{error&&<div className="inline-error">{error}</div>}{remaining>0?<button className="primary big start-button" onClick={beginGame}><Play size={18} fill="currentColor"/>{t.startGame}</button>:<div className="limit-message"><LockKeyhole size={19}/><span>{t.dailyLimit}</span></div>}<p className="small-note">{t.bankNote}</p></section><SiteFooter language={language} navigate={navigate}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
 
   return <main className="app-shell">{header}<section className="game-head"><div><p className="eyebrow">{t.round(round+1,TOTAL_ROUNDS)}</p><h1>{t.gameTitle}</h1><p className="subtitle">{t.gameSubtitle}</p></div><div className="game-head-right"><div className="streak-card"><span>{t.streak}</span><strong>{streak}x</strong></div><div className={`score-pill ${scoreGain?'is-gaining':''}`}><Sparkles size={16}/><span className="score-value">{displayScore}</span><span>{t.pointsShort}</span>{scoreGain&&<span key={scoreGain.id} className="score-float">+{scoreGain.value}</span>}</div></div></section><div className="progress-track"><div className="progress-value" style={{width:`${progress}%`}}/></div>{error&&<div className="inline-error">{error}</div>}{roundLoading||!roundData?<RoundLoader progress={loadProgress} language={language}/>:<><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={({active})=>{if(checked)return;setActiveId(active.id);const rect=active.rect.current.initial;if(rect)setActiveSize({width:rect.width})}} onDragCancel={()=>{setActiveId(null);setActiveSize(null)}} onDragEnd={handleDragEnd}><section className={`timeline-zone ${activeId?'is-sorting':''}`} aria-label={t.cardsAria}><div className="direction-label oldest">{t.oldest}</div><SortableContext items={ordered.map(i=>i.id)} strategy={rectSortingStrategy}><div className="cards-grid">{ordered.map((item,index)=><SortableCard key={item.id} item={item} index={index} checked={checked} correctOrder={correctOrder} move={move} language={language}/>)}</div></SortableContext><div className="direction-label newest">{t.newest}</div></section><DragOverlay adjustScale={false} dropAnimation={{duration:390,easing:'cubic-bezier(0.18, 0.92, 0.28, 1)',sideEffects:defaultDropAnimationSideEffects({styles:{active:{opacity:'0.15'}}})}}>{activeItem?<article className="timeline-card drag-overlay-card" style={{width:activeSize?.width||undefined}}><CardInner item={activeItem} checked={false} overlay language={language}/></article>:null}</DragOverlay></DndContext>{checked&&<section className={`feedback ${roundHits===ROUND_SIZE?'feedback-ok':roundHits>0?'feedback-partial':'feedback-bad'}`}><div className="feedback-icon">{roundHits===ROUND_SIZE?<Check size={22}/>:roundHits>0?roundHits:'!'}</div><div><strong>{roundHits===ROUND_SIZE?t.perfect:roundHits>0?t.partial(roundHits,ROUND_SIZE):t.none}</strong><span>{lastAward>0?t.award(lastAward):t.noAward}</span></div></section>}<section className="actions"><p>{checked?t.compareHint:t.dragHint}</p>{!checked?<button className="primary" onClick={submit}>{t.submit}<Check size={18}/></button>:<button className="primary" onClick={nextRound}>{round===TOTAL_ROUNDS-1?t.seeResult:t.nextRound}<ArrowRight size={18}/></button>}</section></>}<SiteFooter language={language} navigate={navigate}/><DustBurst burst={dustBurst}/><NicknameModal open={Boolean(user&&!profile)} t={t} onSubmit={handleNickname} busy={profileBusy}/></main>
 }

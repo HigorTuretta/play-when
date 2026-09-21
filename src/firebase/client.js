@@ -26,6 +26,6 @@ try {
 }
 export { db }
 
-export const analyticsPromise = isSupported()
+export const getAnalyticsInstance = () => isSupported()
   .then((supported) => supported ? getAnalytics(app) : null)
   .catch(() => null)

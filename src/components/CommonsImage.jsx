@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Camera, Clapperboard, Cpu, FlaskConical, Gamepad2, Globe2, Landmark, Music2, Rocket, Trophy, Wifi } from 'lucide-react'
 
-const CACHE_KEY = 'tempo-certo-commons-cache-v1'
+const CACHE_KEY = 'when-commons-cache-v1'
 
 const categoryIcons = {
   'História': Landmark,

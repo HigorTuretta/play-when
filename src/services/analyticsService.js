@@ -1,8 +1,15 @@
 import { logEvent } from 'firebase/analytics'
-import { analyticsPromise } from '../firebase/client'
+import { getAnalyticsInstance } from '../firebase/client'
+
+let trackingEnabled = false
+
+export function setTrackingEnabled(enabled) {
+  trackingEnabled = Boolean(enabled)
+}
 
 export async function track(name, params = {}) {
-  const analytics = await analyticsPromise
+  if (!trackingEnabled) return
+  const analytics = await getAnalyticsInstance()
   if (!analytics) return
   try { logEvent(analytics, name, params) } catch {}
 }

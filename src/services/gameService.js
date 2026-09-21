@@ -28,6 +28,10 @@ function randomRoundIds() {
   return [...picked]
 }
 
+export function startGuestGame() {
+  return { id: `guest-${gameId()}`, roundIds: randomRoundIds(), guest: true }
+}
+
 export async function getDailyState(uid) {
   const snap = await getDoc(doc(db, 'users', uid, 'state', 'daily'))
   if (!snap.exists()) return { plays: 0, day: null }
@@ -97,6 +101,14 @@ function calculateFromAnswer(orderedIds, answer, streakBefore) {
   const perfect = hits === ROUND_SIZE
   const score = hits * POINTS_PER_CARD + (perfect ? PERFECT_BONUS + streakBefore * STREAK_BONUS_STEP : 0)
   return { hits, perfect, score, streakAfter: perfect ? streakBefore + 1 : 0 }
+}
+
+export async function submitGuestRound({ roundId, orderedIds, streakBefore }) {
+  const answerSnap = await getDoc(doc(db, 'roundAnswers', roundId))
+  if (!answerSnap.exists()) throw new Error('answer-not-found')
+  const answer = answerSnap.data()
+  const result = calculateFromAnswer(orderedIds, answer, streakBefore)
+  return { ...result, years: answer.years, correctOrder: answer.correctOrder }
 }
 
 export async function submitRound({ uid, gameId, roundId, roundIndex, orderedIds, streakBefore }) {

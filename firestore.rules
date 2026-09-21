@@ -154,13 +154,15 @@ service cloud.firestore {
     }
 
     match /rounds/{roundId} {
-      allow get: if signedIn();
+      allow get: if true;
       allow list, write: if false;
     }
 
     match /roundAnswers/{roundId} {
-      allow get: if signedIn()
-        && exists(/databases/$(database)/documents/attempts/$(request.auth.uid + '_' + roundId));
+      // Guests never write attempts, scores, or personal data. The client reads
+      // this document when the player confirms an order.
+      allow get: if !signedIn()
+        || exists(/databases/$(database)/documents/attempts/$(request.auth.uid + '_' + roundId));
       allow list, write: if false;
     }
 
