@@ -36,7 +36,7 @@ O ano fica escondido enquanto você decide. Depois de confirmar a ordem, as data
 - autenticação opcional pelo Google
 - leaderboard global com os 10 maiores placares acumulados
 - interface completa em PT-BR e inglês, sempre com o nome **When?**
-- imagens do Wikimedia Commons com atribuição quando disponível
+- imagens vinculadas aos artigos relevantes da Wikipedia, com link para a fonte
 - política de privacidade e termos de uso integrados
 
 ## 🔐 Dados e pontuação
