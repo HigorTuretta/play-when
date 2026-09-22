@@ -30,4 +30,4 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
 }
 
 console.log(`Rewrote ${written} rounds from ${from} into ${path.basename(staticRoundsDir)}.`)
-console.log(`Keep public/rounds/${from} for one release so tabs still running the old bundle keep working.`)
+console.log(`Delete public/rounds/${from} once the new folder looks right: publishing both doubles the deploy.`)

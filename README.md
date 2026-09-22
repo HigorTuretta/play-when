@@ -197,10 +197,13 @@ npm run dev
 | `npm run validate:rounds` | Valida o que está publicado em `public/rounds/` (uma carta por categoria, sem repetir evento, sem ano no título) |
 | `npm run retext:rounds` | Reescreve só o texto das cartas publicadas a partir de `data/event-titles-*.json`, sem reseed |
 | `npm run emulators` | Sobe os emuladores de Auth + Firestore (projeto `demo-play-when`, isolado da produção) |
+
 | `npm run dev:emulators` | Servidor de desenvolvimento apontando para os emuladores acima |
 | `npm run test:rules` | Roda os testes das Security Rules (`tests/firestore.rules.test.mjs`) no emulador |
 
 > O arquivo `.env` é ignorado pelo Git. Nunca faça commit de credenciais.
+
+> `emulators` e `test:rules` puxam a CLI do Firebase via `npx` na hora de rodar. Ela não é uma dependência do projeto de propósito: são ~300 MB que o build de produção instalaria sem nunca usar.
 
 ### Rodadas: ranqueadas vs. visitante
 
@@ -211,7 +214,7 @@ As 2.500 rodadas são divididas em duas faixas (`RANKED_POOL_SIZE` em [constants
 
 `npm run seed:firestore` (ou `npm run export:rounds`) gera esses arquivos junto com o Firestore. Se o conteúdo das rodadas mudar, ajuste `STATIC_ROUNDS_VERSION` em [scripts/lib/rounds.mjs](scripts/lib/rounds.mjs) e `STATIC_ROUNDS_URL` em [constants.js](src/features/game/constants.js) — os arquivos são servidos com cache imutável.
 
-> `public/rounds/v1` continua no repositório só para as abas que ainda estejam rodando o bundle antigo no momento do deploy. Pode ser apagado no release seguinte.
+> Só a versão em uso fica no repositório. Publicar duas dobra o tamanho do deploy, e como `index.html` é servido com `no-cache`, qualquer aba pega o bundle novo no próximo carregamento.
 
 ### Texto das cartas
 
@@ -219,7 +222,7 @@ As 2.500 rodadas são divididas em duas faixas (`RANKED_POOL_SIZE` em [constants
 - **Título em inglês**: vem de `data/event-titles-en.json`, um por evento. Antes o campo carregava a busca usada para achar a imagem na Wikipedia — muitas vezes só um fragmento ("Magna Carta") e, em 38 cartas, com o ano no meio, entregando a resposta a quem jogava em inglês.
 - **Descrição da carta**: não é publicada nos arquivos de rodada. O cliente monta a partir da categoria (`categoryShort` em [pt-BR.js](src/i18n/locales/pt-BR.js) e [en.js](src/i18n/locales/en.js)), então uma carta de Transportes não tem como aparecer descrita como cinema.
 
-Mudou só o texto? `npm run retext:rounds` reescreve os arquivos publicados sem reseed — o gabarito no Firestore é indexado por rodada e por carta, e nenhum dos dois muda. Lembre de subir `STATIC_ROUNDS_VERSION` antes, porque `/rounds/**` é servido com cache imutável.
+Mudou só o texto? `npm run retext:rounds <versão-anterior>` reescreve os arquivos publicados sem reseed — o gabarito no Firestore é indexado por rodada e por carta, e nenhum dos dois muda. Suba `STATIC_ROUNDS_VERSION` antes (porque `/rounds/**` é servido com cache imutável) e apague a pasta antiga depois de conferir.
 
 ### Como uma rodada é montada
 
