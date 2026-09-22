@@ -3,8 +3,11 @@
   publish = "dist"
 
 [build.environment]
-  # These values are public identifiers intentionally embedded in the Vite bundle.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_GITHUB_URL,VITE_APPCHECK_SITE_KEY"
+  # These values are public identifiers intentionally embedded in the Vite bundle. The auth
+  # domain is also written into the frame-src of the CSP below and in firebase.json, where
+  # secrets scanning finds it in the repository itself; it is <project-id>.firebaseapp.com,
+  # served in a response header to every visitor, and the project id is already listed here.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_AUTH_DOMAIN,VITE_GITHUB_URL,VITE_APPCHECK_SITE_KEY"
 
 # Keep in sync with the hosting headers in firebase.json. The auth domain in frame-src must
 # match VITE_FIREBASE_AUTH_DOMAIN.
