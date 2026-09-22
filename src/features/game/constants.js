@@ -7,7 +7,7 @@ export const ROUND_POOL_SIZE = 2500
 // validRankedRoundId() in firestore.rules.
 export const RANKED_POOL_SIZE = 2250
 // Bump together with STATIC_ROUNDS_VERSION in scripts/lib/rounds.mjs: files are cached as immutable.
-export const STATIC_ROUNDS_URL = '/rounds/v1'
+export const STATIC_ROUNDS_URL = '/rounds/v2'
 export const POINTS_PER_CARD = 25
 export const PERFECT_BONUS = 50
 export const STREAK_BONUS_STEP = 20

@@ -36,9 +36,18 @@ function rankedOrderFor(uid) {
   return ranked.order
 }
 
-export function rankedRoundIds(uid, cursor) {
+export const rankedPoolSizeFor = (uid) => rankedOrderFor(uid).length
+
+// The cursor walks the permutation without wrapping: once it runs past the end the player
+// has answered every ranked round, and startGame() reports that instead of dealing a
+// round again (the rules would refuse it, since the attempt is already on record).
+export function rankedRoundAt(uid, position) {
   const order = rankedOrderFor(uid)
-  return Array.from({ length: TOTAL_ROUNDS }, (_, index) => roundIdFor(order[(cursor + index) % order.length]))
+  return position < order.length ? roundIdFor(order[position]) : null
+}
+
+export function rankedRoundIds(uid, cursor) {
+  return Array.from({ length: TOTAL_ROUNDS }, (_, index) => rankedRoundAt(uid, cursor + index))
 }
 
 export function guestRoundIds() {

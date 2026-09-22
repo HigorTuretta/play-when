@@ -56,6 +56,27 @@ service cloud.firestore {
       return hits * 25 + (hits == 4 ? 50 + streakBefore * 20 : 0);
     }
 
+    // A daily document may predate the current shape (written by older rules, or left
+    // half-written by an interrupted migration). Reading a missing field aborts the whole
+    // rule with an evaluation error, which would lock the player out of starting a game,
+    // so every read of the stored document goes through these.
+    function playedToday(daily) {
+      return 'day' in daily && daily.day is timestamp && daily.day.date() == request.time.date();
+    }
+
+    function playsToday(daily) {
+      return (playedToday(daily) && daily.get('plays', 0) is int) ? daily.get('plays', 0) : 0;
+    }
+
+    function currentGame(uid, daily) {
+      return /databases/$(database)/documents/users/$(uid)/games/$(daily.currentGameId);
+    }
+
+    function hasCurrentGame(uid, daily) {
+      return 'currentGameId' in daily && daily.currentGameId is string
+        && exists(currentGame(uid, daily));
+    }
+
     function noAttempt(uid, roundId) {
       return !exists(/databases/$(database)/documents/attempts/$(uid + '_' + roundId));
     }
@@ -158,8 +179,10 @@ service cloud.firestore {
         && request.resource.data.lastPlayedAt == request.time
         && request.resource.data.updatedAt == request.time
         && request.resource.data.streak is int
-        && get(/databases/$(database)/documents/users/$(uid)/games/$(resource.data.currentGameId)).data.completed == true
-        && get(/databases/$(database)/documents/users/$(uid)/games/$(resource.data.currentGameId)).data.completedAt.date() == request.time.date()
+        && hasCurrentGame(uid, resource.data)
+        && get(currentGame(uid, resource.data)).data.completed == true
+        && get(currentGame(uid, resource.data)).data.completedAt is timestamp
+        && get(currentGame(uid, resource.data)).data.completedAt.date() == request.time.date()
         && (
           (!('lastPlayedAt' in resource.data) && request.resource.data.streak == 1)
           ||
@@ -181,14 +204,8 @@ service cloud.firestore {
         && request.resource.data.get('roundCursor', 0) is int
         && request.resource.data.currentGameId is string
         && getAfter(/databases/$(database)/documents/users/$(uid)/games/$(request.resource.data.currentGameId)).data.uid == uid
-        && (
-          (resource.data.day.date() == request.time.date()
-            && resource.data.plays < 3
-            && request.resource.data.plays == resource.data.plays + 1)
-          ||
-          (resource.data.day.date() != request.time.date()
-            && request.resource.data.plays == 1)
-        );
+        && playsToday(resource.data) < 3
+        && request.resource.data.plays == playsToday(resource.data) + 1;
 
       allow delete: if false;
     }

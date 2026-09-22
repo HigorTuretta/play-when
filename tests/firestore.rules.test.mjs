@@ -5,8 +5,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import {
-  Timestamp, collection, doc, getDoc, getDocs, increment, limit, orderBy, query, serverTimestamp, setDoc,
-  updateDoc, writeBatch,
+  Timestamp, collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, serverTimestamp,
+  setDoc, updateDoc, writeBatch,
 } from 'firebase/firestore'
 
 const roundIdFor = (n) => `round-${String(n).padStart(4, '0')}`
@@ -360,5 +360,79 @@ describe('leaderboard', () => {
     await assertFails(setDoc(doc(db, 'scoreCredits', 'alice_fake'), {
       uid: 'alice', gameId: 'fake', score: 5000, createdAt: serverTimestamp(),
     }))
+  })
+})
+
+// Documents written before the current rules shipped, or left half-written by an
+// interrupted migration, must not lock a player out: every one of these used to abort
+// the rule with an evaluation error, so no branch could allow the write.
+describe('legacy state documents', () => {
+  const rounds = RANKED.slice(0, 6)
+  const yesterday = () => Timestamp.fromMillis(Date.now() - DAY_MS)
+
+  // Mirrors startGame() in src/features/game/api/gameService.js, which commits the game
+  // and the daily document in a transaction rather than the batch used above.
+  const startGameAsClient = (db, uid, gameId, roundIds, plays = 1) => runTransaction(db, async (tx) => {
+    await tx.get(doc(db, 'users', uid, 'state', 'daily'))
+    tx.set(doc(db, 'users', uid, 'games', gameId), {
+      uid, roundIds, score: 0, completed: false, createdAt: serverTimestamp(), completedAt: null,
+    })
+    tx.set(doc(db, 'users', uid, 'state', 'daily'), {
+      day: serverTimestamp(), plays, currentGameId: gameId, roundCursor: 6 * plays, updatedAt: serverTimestamp(),
+    }, { merge: true })
+  })
+
+  test('the client transaction starts a game just like the batch above', async () => {
+    await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
+  })
+
+  test('a daily document without day or plays still allows the first game of the day', async () => {
+    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), { streak: 3, lastPlayedAt: yesterday() }))
+    await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
+    const daily = await getDoc(doc(google('alice'), 'users', 'alice', 'state', 'daily'))
+    assert.equal(daily.data().streak, 3)
+  })
+
+  test('a daily document from today without plays counts the new game as the first', async () => {
+    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+      day: serverTimestamp(), currentGameId: 'old', updatedAt: serverTimestamp(),
+    }))
+    await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
+    await assertFails(startGameAsClient(google('alice'), 'alice', 'g2', RANKED.slice(6, 12), 3))
+  })
+
+  test('a daily document with a plays count that is not a number cannot inflate the limit', async () => {
+    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+      day: serverTimestamp(), plays: 'many', currentGameId: 'old', updatedAt: serverTimestamp(),
+    }))
+    await assertFails(startGameAsClient(google('alice'), 'alice', 'g1', rounds, 2))
+    await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds, 1))
+  })
+
+  test('the daily limit still holds when the stored day is today', async () => {
+    const db = google('alice')
+    await assertSucceeds(startGameAsClient(db, 'alice', 'g1', RANKED.slice(0, 6), 1))
+    await assertSucceeds(startGameAsClient(db, 'alice', 'g2', RANKED.slice(6, 12), 2))
+    await assertSucceeds(startGameAsClient(db, 'alice', 'g3', RANKED.slice(12, 18), 3))
+    await assertFails(startGameAsClient(db, 'alice', 'g4', RANKED.slice(18, 24), 4))
+  })
+
+  test('a daily document without currentGameId refuses the streak, not the next game', async () => {
+    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+      day: yesterday(), plays: 1, updatedAt: yesterday(),
+    }))
+    await assertFails(creditStreak(google('alice'), 'alice', 1))
+    await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
+  })
+
+  test('a daily document pointing at a game that no longer exists refuses the streak', async () => {
+    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+      day: serverTimestamp(), plays: 1, currentGameId: 'gone', updatedAt: serverTimestamp(),
+    }))
+    await assertFails(creditStreak(google('alice'), 'alice', 1))
+  })
+
+  test('a stale client session cannot write an attempt for a game that is gone', async () => {
+    await assertFails(submit(google('alice'), 'alice', 'ghost', RANKED[0], 0, perfect(RANKED[0])))
   })
 })

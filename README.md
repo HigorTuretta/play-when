@@ -193,7 +193,9 @@ npm run dev
 | `npm run preview` | Serve o build localmente |
 | `npm run seed:firestore` | Popula `facts/`, `rounds/`, `roundAnswers/` e `public/rounds/` a partir de `private-data/facts.json` |
 | `npm run export:rounds` | Regenera `public/rounds/` a partir do que já está no Firestore (sem `facts.json` em mãos) |
-| `npm run validate:facts` | Valida `private-data/facts.json` (duplicatas, datas, referências) |
+| `npm run validate:facts` | Valida `private-data/facts.json` (duplicatas, datas, referências, títulos em inglês) |
+| `npm run validate:rounds` | Valida o que está publicado em `public/rounds/` (uma carta por categoria, sem repetir evento, sem ano no título) |
+| `npm run retext:rounds` | Reescreve só o texto das cartas publicadas a partir de `data/event-titles-*.json`, sem reseed |
 | `npm run emulators` | Sobe os emuladores de Auth + Firestore (projeto `demo-play-when`, isolado da produção) |
 | `npm run dev:emulators` | Servidor de desenvolvimento apontando para os emuladores acima |
 | `npm run test:rules` | Roda os testes das Security Rules (`tests/firestore.rules.test.mjs`) no emulador |
@@ -204,10 +206,24 @@ npm run dev
 
 As 2.500 rodadas são divididas em duas faixas (`RANKED_POOL_SIZE` em [constants.js](src/features/game/constants.js) e `validRankedRoundId()` em [firestore.rules](firestore.rules)):
 
-- **`round-0001` a `round-2250`** — ranqueadas. O cliente busca as cartas em `public/rounds/v1/`, mas o gabarito (`roundAnswers/`) só fica no Firestore e só é liberado depois que a tentativa do jogador é registrada.
-- **`round-2251` a `round-2500`** — visitante. Gabarito incluído no próprio arquivo estático em `public/rounds/v1/`, então o modo visitante roda 100% sem tocar no Firestore.
+- **`round-0001` a `round-2250`** — ranqueadas. O cliente busca as cartas em `public/rounds/v2/`, mas o gabarito (`roundAnswers/`) só fica no Firestore e só é liberado depois que a tentativa do jogador é registrada.
+- **`round-2251` a `round-2500`** — visitante. Gabarito incluído no próprio arquivo estático em `public/rounds/v2/`, então o modo visitante roda 100% sem tocar no Firestore.
 
 `npm run seed:firestore` (ou `npm run export:rounds`) gera esses arquivos junto com o Firestore. Se o conteúdo das rodadas mudar, ajuste `STATIC_ROUNDS_VERSION` em [scripts/lib/rounds.mjs](scripts/lib/rounds.mjs) e `STATIC_ROUNDS_URL` em [constants.js](src/features/game/constants.js) — os arquivos são servidos com cache imutável.
+
+> `public/rounds/v1` continua no repositório só para as abas que ainda estejam rodando o bundle antigo no momento do deploy. Pode ser apagado no release seguinte.
+
+### Texto das cartas
+
+- **Título em português**: vem de `private-data/facts.json`; `data/event-titles-pt.json` sobrescreve os poucos casos que precisam mudar (por exemplo, um título que entregava o ano).
+- **Título em inglês**: vem de `data/event-titles-en.json`, um por evento. Antes o campo carregava a busca usada para achar a imagem na Wikipedia — muitas vezes só um fragmento ("Magna Carta") e, em 38 cartas, com o ano no meio, entregando a resposta a quem jogava em inglês.
+- **Descrição da carta**: não é publicada nos arquivos de rodada. O cliente monta a partir da categoria (`categoryShort` em [pt-BR.js](src/i18n/locales/pt-BR.js) e [en.js](src/i18n/locales/en.js)), então uma carta de Transportes não tem como aparecer descrita como cinema.
+
+Mudou só o texto? `npm run retext:rounds` reescreve os arquivos publicados sem reseed — o gabarito no Firestore é indexado por rodada e por carta, e nenhum dos dois muda. Lembre de subir `STATIC_ROUNDS_VERSION` antes, porque `/rounds/**` é servido com cache imutável.
+
+### Como uma rodada é montada
+
+Cada rodada sorteia **quatro categorias diferentes** e **quatro anos diferentes** (`makeRound()` em [scripts/seed-firestore.mjs](scripts/seed-firestore.mjs)). Sem a regra de categoria, quase metade das rodadas repetia assunto — e havia rodadas com as quatro cartas da mesma categoria. A regra vale para as rodadas geradas a partir daí: rode `npm run seed:firestore` para reconstruir o acervo e `npm run validate:rounds` para conferir.
 
 ### App Check (opcional, recomendado em produção)
 
@@ -224,6 +240,7 @@ Preencha `VITE_APPCHECK_SITE_KEY` no `.env` com uma chave do **reCAPTCHA Enterpr
 - Drag-and-drop with mouse, touch or keyboard; mid-game progress survives page switches and reloads.
 - Fully bilingual (PT-BR / EN), with shareable emoji results.
 - Built with React, Vite, dnd-kit and Firebase, with scores validated server-side by Firestore security rules.
+- Every round deals four different categories and four different years, and card titles never contain the year.
 
 ---
 

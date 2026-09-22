@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import { track } from '../../../lib/analytics'
 import {
-  creditDailyStreak, finishGame, getDailyState, startGame, startGuestGame, submitGuestRound, submitRound,
+  creditDailyStreak, finishGame, getDailyState, isGameOpen, startGame, startGuestGame, submitGuestRound, submitRound,
 } from '../api/gameService'
 import { preloadEventImage } from '../api/imageService'
 import { getRound } from '../api/roundService'
@@ -56,11 +56,20 @@ export function useGameState({ user, profile }) {
     let alive = true
 
     getDailyState(uid)
-      .then((state) => {
+      .then(async (state) => {
         if (!alive) return
         setDaily(state)
         const saved = loadSession(uid)
         if (!saved) return
+        // The saved game may have been finished on another device, or belong to an
+        // account state that no longer exists. Resuming it would make every submission
+        // fail against the rules, so a session known to be unplayable is dropped. A check
+        // that could not be made keeps the session: submitting will say so soon enough.
+        if (await isGameOpen(uid, saved.game.id) === false) {
+          clearSession()
+          return
+        }
+        if (!alive) return
         resetGame(saved)
         setStatus('playing')
       })
@@ -120,8 +129,9 @@ export function useGameState({ user, profile }) {
       setStatus('playing')
       return true
     } catch (e) {
+      console.error('Failed to start a game', e)
       if (e?.message === 'daily-limit') setDaily((current) => ({ ...current, plays: DAILY_LIMIT }))
-      else setError('generic')
+      else setError(e?.message === 'pool-exhausted' ? 'poolExhausted' : 'generic')
       return false
     }
   }, [user, profile, resetGame])
@@ -170,7 +180,14 @@ export function useGameState({ user, profile }) {
       track('round_submit', { round: round + 1, hits: result.hits, score: result.score })
     } catch (e) {
       console.error('Failed to submit round', e)
-      setError('generic')
+      if (uid && !game.guest && await isGameOpen(uid, game.id) === false) {
+        clearSession()
+        resetGame()
+        setStatus('home')
+        setError('sessionExpired')
+      } else {
+        setError('generic')
+      }
     } finally {
       setBusy(false)
     }
@@ -201,7 +218,8 @@ export function useGameState({ user, profile }) {
       try {
         setDaily(await creditDailyStreak(uid, daily))
       } catch {}
-    } catch {
+    } catch (e) {
+      console.error('Failed to finish the game', e)
       setError('generic')
     } finally {
       setBusy(false)
