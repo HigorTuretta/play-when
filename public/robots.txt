@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
+Disallow: /rounds/
 Sitemap: https://tempo-certo-6ccc2.web.app/sitemap.xml

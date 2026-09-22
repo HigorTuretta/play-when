@@ -4,6 +4,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.emulator
 private-data/
 service-account*.json
 *.log

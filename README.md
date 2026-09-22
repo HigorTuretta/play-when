@@ -191,8 +191,27 @@ npm run dev
 | `npm run dev` | Servidor de desenvolvimento com hot reload |
 | `npm run build` | Build de produção em `dist/` |
 | `npm run preview` | Serve o build localmente |
+| `npm run seed:firestore` | Popula `facts/`, `rounds/`, `roundAnswers/` e `public/rounds/` a partir de `private-data/facts.json` |
+| `npm run export:rounds` | Regenera `public/rounds/` a partir do que já está no Firestore (sem `facts.json` em mãos) |
+| `npm run validate:facts` | Valida `private-data/facts.json` (duplicatas, datas, referências) |
+| `npm run emulators` | Sobe os emuladores de Auth + Firestore (projeto `demo-play-when`, isolado da produção) |
+| `npm run dev:emulators` | Servidor de desenvolvimento apontando para os emuladores acima |
+| `npm run test:rules` | Roda os testes das Security Rules (`tests/firestore.rules.test.mjs`) no emulador |
 
 > O arquivo `.env` é ignorado pelo Git. Nunca faça commit de credenciais.
+
+### Rodadas: ranqueadas vs. visitante
+
+As 2.500 rodadas são divididas em duas faixas (`RANKED_POOL_SIZE` em [constants.js](src/features/game/constants.js) e `validRankedRoundId()` em [firestore.rules](firestore.rules)):
+
+- **`round-0001` a `round-2250`** — ranqueadas. O cliente busca as cartas em `public/rounds/v1/`, mas o gabarito (`roundAnswers/`) só fica no Firestore e só é liberado depois que a tentativa do jogador é registrada.
+- **`round-2251` a `round-2500`** — visitante. Gabarito incluído no próprio arquivo estático em `public/rounds/v1/`, então o modo visitante roda 100% sem tocar no Firestore.
+
+`npm run seed:firestore` (ou `npm run export:rounds`) gera esses arquivos junto com o Firestore. Se o conteúdo das rodadas mudar, ajuste `STATIC_ROUNDS_VERSION` em [scripts/lib/rounds.mjs](scripts/lib/rounds.mjs) e `STATIC_ROUNDS_URL` em [constants.js](src/features/game/constants.js) — os arquivos são servidos com cache imutável.
+
+### App Check (opcional, recomendado em produção)
+
+Preencha `VITE_APPCHECK_SITE_KEY` no `.env` com uma chave do **reCAPTCHA Enterprise** para ativar o [Firebase App Check](https://firebase.google.com/docs/app-check): ele passa a exigir que as requisições ao Firestore venham do app de verdade, não de scripts usando a chave pública. Ative o enforcement no console do Firebase depois de confirmar as métricas. Em desenvolvimento, use `VITE_APPCHECK_DEBUG_TOKEN` com um token de depuração registrado no console.
 
 ---
 

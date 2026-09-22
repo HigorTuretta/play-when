@@ -20,7 +20,7 @@ export default {
   language:'Idioma', developedBy:'Feito por', github:'GitHub', bc:'a.C.', signIn:'Entrar com Google', signOut:'Sair', account:'Conta',
   streakUnit:'dias', streakHint:'Sequência diária: você perde se ficar 2 dias sem jogar.',
  loginToSave:'Faça login para salvar seus pontos!',
-  profileTitle:'Escolha seu nome no ranking', profileCopy:'Seu nome real e sua foto do Google não serão exibidos. Cadastre apenas um apelido.', nickname:'Nickname', nicknamePlaceholder:'Ex.: Turetta', saveNickname:'Salvar e continuar', nicknameHint:'2 a 24 caracteres.',
+  profileTitle:'Escolha seu nome no ranking', profileCopy:'Seu nome real e sua foto do Google não serão exibidos. Cadastre apenas um apelido.', nickname:'Nickname', nicknamePlaceholder:'Ex.: Turetta', saveNickname:'Salvar e continuar', nicknameHint:'2 a 24 caracteres: letras, números, espaços e _ . -',
   skip:'Pular', next:'Próximo', gotIt:'Entendi, bora jogar',
   onboard:[
     { icon:'1', title:'Quatro cartas, uma linha do tempo', copy:'Cada rodada traz quatro acontecimentos embaralhados. A missão é simples de entender e difícil de acertar: ordenar do mais antigo para o mais recente.' },

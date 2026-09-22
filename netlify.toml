@@ -4,7 +4,32 @@
 
 [build.environment]
   # These values are public identifiers intentionally embedded in the Vite bundle.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_GITHUB_URL"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_GITHUB_URL,VITE_APPCHECK_SITE_KEY"
+
+# Keep in sync with the hosting headers in firebase.json. The auth domain in frame-src must
+# match VITE_FIREBASE_AUTH_DOMAIN.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://apis.google.com https://www.googletagmanager.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebaseinstallations.googleapis.com https://firebase.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/ https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; frame-src https://tempo-certo-6ccc2.firebaseapp.com https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Strict-Transport-Security = "max-age=31536000"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    # Firebase Auth's signInWithPopup needs to reach its popup window.
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Round files are versioned by folder (STATIC_ROUNDS_URL); a new export gets a new folder.
+[[headers]]
+  for = "/rounds/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[redirects]]
   from = "/*"

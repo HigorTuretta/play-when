@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import { track } from '../../../lib/analytics'
 import {
-  creditDailyStreak, finishGame, getDailyState, getRound, startGame, startGuestGame, submitGuestRound, submitRound,
+  creditDailyStreak, finishGame, getDailyState, startGame, startGuestGame, submitGuestRound, submitRound,
 } from '../api/gameService'
 import { preloadEventImage } from '../api/imageService'
+import { getRound } from '../api/roundService'
+import { invalidateLeaderboard } from '../../leaderboard/leaderboardService'
 import { DAILY_LIMIT, ROUND_SIZE, TOTAL_ROUNDS } from '../constants'
 import { clearSession, loadSession, restoreRound, saveSession } from '../utils/session'
 import { shuffle } from '../utils/shuffle'
@@ -106,14 +108,10 @@ export function useGameState({ user, profile }) {
       setError(null)
       let created
       if (user) {
-        const fresh = await getDailyState(user.uid)
-        if (fresh.plays >= DAILY_LIMIT) {
-          setDaily(fresh)
-          return false
-        }
-        created = await startGame(user.uid)
-        setDaily({ ...fresh, plays: fresh.plays + 1 })
-        track('game_start', { daily_play: fresh.plays + 1, mode: 'account' })
+        const started = await startGame(user.uid)
+        created = started.game
+        setDaily(started.daily)
+        track('game_start', { daily_play: started.daily.plays, mode: 'account' })
       } else {
         created = startGuestGame()
         track('game_start', { mode: 'guest' })
@@ -194,16 +192,15 @@ export function useGameState({ user, profile }) {
 
     try {
       setBusy(true)
-      const finalScore = await finishGame({ uid, gameId: game.id, score })
+      const finalScore = await finishGame({ uid, gameId: game.id, hits: results.map((result) => result.hits) })
       setScore(finalScore)
       setStatus('finished')
       clearSession()
-      try {
-        const credited = await creditDailyStreak(uid)
-        setDaily((current) => ({ ...current, streak: credited }))
-      } catch {}
-      setDaily(await getDailyState(uid))
+      invalidateLeaderboard()
       track('game_complete', { score: finalScore, mode: 'account' })
+      try {
+        setDaily(await creditDailyStreak(uid, daily))
+      } catch {}
     } catch {
       setError('generic')
     } finally {

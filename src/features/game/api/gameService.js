@@ -9,13 +9,14 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../../../lib/firebase'
-import { DAILY_LIMIT, ROUND_POOL_SIZE, TOTAL_ROUNDS } from '../constants'
-import { currentStreak, isSameDay, nextStreak, scoreRound } from '../scoring'
+import { DAILY_LIMIT, TOTAL_ROUNDS } from '../constants'
+import { currentStreak, isSameDay, nextStreak, scoreGame, scoreRound } from '../scoring'
+import { guestRoundIds, rankedRoundIds } from '../utils/roundSelection'
+import { getGuestAnswer } from './roundService'
 
 const START_ATTEMPTS = 8
 
 const newGameId = () => crypto.randomUUID()
-const roundIdFor = (n) => `round-${String(n).padStart(4, '0')}`
 const recordIdFor = (uid, roundId) => `${uid}_${roundId}`
 const dailyRef = (uid) => doc(db, 'users', uid, 'state', 'daily')
 const toDate = (timestamp) => timestamp?.toDate?.() || null
@@ -25,10 +26,15 @@ const submissionError = (stage, error) => new Error(
   { cause: error },
 )
 
-function randomRoundIds() {
-  const picked = new Set()
-  while (picked.size < TOTAL_ROUNDS) picked.add(roundIdFor(1 + Math.floor(Math.random() * ROUND_POOL_SIZE)))
-  return [...picked]
+function toDailyState(data = {}, now = new Date()) {
+  const day = toDate(data.day)
+  const lastPlayedAt = toDate(data.lastPlayedAt)
+  return {
+    plays: day && isSameDay(day, now) ? data.plays || 0 : 0,
+    streak: currentStreak(data.streak || 0, lastPlayedAt, now),
+    storedStreak: data.streak || 0,
+    lastPlayedAt,
+  }
 }
 
 async function createOrResume(ref, data, matches, stage) {
@@ -56,58 +62,44 @@ async function getAnswer(roundId) {
 }
 
 export function startGuestGame() {
-  return { id: `guest-${newGameId()}`, roundIds: randomRoundIds(), guest: true }
+  return { id: `guest-${newGameId()}`, roundIds: guestRoundIds(), guest: true }
 }
 
 export async function getDailyState(uid) {
   const snap = await getDoc(dailyRef(uid))
-  if (!snap.exists()) return { plays: 0, day: null, streak: 0, lastPlayedAt: null }
-
-  const data = snap.data()
-  const day = toDate(data.day)
-  const lastPlayedAt = toDate(data.lastPlayedAt)
-  const now = new Date()
-  return {
-    plays: day && isSameDay(day, now) ? data.plays || 0 : 0,
-    day,
-    streak: currentStreak(data.streak || 0, lastPlayedAt, now),
-    lastPlayedAt,
-  }
+  return toDailyState(snap.exists() ? snap.data() : {})
 }
 
-export async function creditDailyStreak(uid) {
-  const ref = dailyRef(uid)
-  const snap = await getDoc(ref)
-  if (!snap.exists()) return 0
-
-  const data = snap.data()
-  const lastPlayedAt = toDate(data.lastPlayedAt)
+// Uses the daily state already in memory (read when the game started or the page loaded)
+// instead of reading it again. If another device credited today's streak first, the rules
+// reject the write and the caller keeps its state.
+export async function creditDailyStreak(uid, daily) {
   const now = new Date()
-  const stored = data.streak || 0
-  if (lastPlayedAt && isSameDay(lastPlayedAt, now)) return stored
+  const { storedStreak, lastPlayedAt } = daily
+  if (lastPlayedAt && isSameDay(lastPlayedAt, now)) return daily
 
-  const streak = nextStreak(stored, lastPlayedAt, now)
-  await updateDoc(ref, { streak, lastPlayedAt: serverTimestamp(), updatedAt: serverTimestamp() })
-  return streak
+  const streak = nextStreak(storedStreak, lastPlayedAt, now)
+  await updateDoc(dailyRef(uid), { streak, lastPlayedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+  return { ...daily, streak, storedStreak: streak, lastPlayedAt: now }
 }
 
+// The daily document is merged, not replaced: replacing it would drop the streak fields,
+// which the rules refuse. When the rules reject a block of rounds (accounts from before
+// roundCursor may have played some of them at random), the next block is tried.
 export async function startGame(uid) {
-  for (let attempt = 1; attempt <= START_ATTEMPTS; attempt += 1) {
-    const roundIds = randomRoundIds()
+  for (let attempt = 0; attempt < START_ATTEMPTS; attempt += 1) {
     const id = newGameId()
 
     try {
-      await runTransaction(db, async (tx) => {
-        const dailySnap = await tx.get(dailyRef(uid))
-        let plays = 1
+      return await runTransaction(db, async (tx) => {
+        const snap = await tx.get(dailyRef(uid))
+        const data = snap.exists() ? snap.data() : {}
+        const daily = toDailyState(data)
+        if (daily.plays >= DAILY_LIMIT) throw new Error('daily-limit')
 
-        if (dailySnap.exists()) {
-          const data = dailySnap.data()
-          const day = toDate(data.day)
-          const sameDay = day && isSameDay(day, new Date())
-          plays = sameDay ? (data.plays || 0) + 1 : 1
-          if (sameDay && plays > DAILY_LIMIT) throw new Error('daily-limit')
-        }
+        const cursor = (data.roundCursor || 0) + attempt * TOTAL_ROUNDS
+        const roundIds = rankedRoundIds(uid, cursor)
+        const plays = daily.plays + 1
 
         tx.set(doc(db, 'users', uid, 'games', id), {
           uid,
@@ -121,68 +113,48 @@ export async function startGame(uid) {
           day: serverTimestamp(),
           plays,
           currentGameId: id,
+          roundCursor: cursor + TOTAL_ROUNDS,
           updatedAt: serverTimestamp(),
-        })
-      })
+        }, { merge: true })
 
-      return { id, roundIds, guest: false }
+        return { game: { id, roundIds, guest: false }, daily: { ...daily, plays } }
+      })
     } catch (error) {
-      if (error?.message === 'daily-limit' || attempt === START_ATTEMPTS) throw error
+      if (error?.code !== 'permission-denied' || attempt === START_ATTEMPTS - 1) throw error
     }
   }
 
   throw new Error('round-selection-failed')
 }
 
-export async function getRound(roundId) {
-  const snap = await getDoc(doc(db, 'rounds', roundId))
-  if (!snap.exists()) throw new Error('round-not-found')
-  return { id: snap.id, ...snap.data() }
-}
-
 export async function submitGuestRound({ roundId, orderedIds, streakBefore }) {
-  const answer = await getAnswer(roundId)
+  const answer = await getGuestAnswer(roundId)
   const result = scoreRound(orderedIds, answer.correctOrder, streakBefore)
   return { ...result, years: answer.years, correctOrder: answer.correctOrder }
 }
 
+// The attempt records only the order; the answer becomes readable once it exists. The
+// score is recomputed by the rules when the game is finished.
 export async function submitRound({ uid, gameId, roundId, roundIndex, orderedIds, streakBefore }) {
-  const sameRound = (stored) => stored.gameId === gameId && stored.roundId === roundId && stored.roundIndex === roundIndex
-
   const attempt = await createOrResume(
     doc(db, 'attempts', recordIdFor(uid, roundId)),
     { uid, gameId, roundId, roundIndex, orderedIds, createdAt: serverTimestamp() },
-    sameRound,
+    (stored) => stored.gameId === gameId && stored.roundId === roundId && stored.roundIndex === roundIndex,
     'attempt',
   )
 
   const answer = await getAnswer(roundId)
   const result = scoreRound(attempt.orderedIds, answer.correctOrder, streakBefore)
-
-  await createOrResume(
-    doc(db, 'roundCredits', recordIdFor(uid, roundId)),
-    {
-      uid,
-      gameId,
-      roundId,
-      roundIndex,
-      hits: result.hits,
-      score: result.score,
-      streakBefore,
-      streakAfter: result.streakAfter,
-      createdAt: serverTimestamp(),
-    },
-    sameRound,
-    'credit',
-  )
-
   return { ...result, years: answer.years, correctOrder: answer.correctOrder }
 }
 
-export async function finishGame({ uid, gameId, score }) {
+// The rules check each round's hits against its attempt and answer (rounds 1-3 on the game,
+// 4-6 on the score credit) and require the score to follow from them.
+export async function finishGame({ uid, gameId, hits }) {
+  const score = scoreGame(hits)
   const batch = writeBatch(db)
 
-  batch.update(doc(db, 'users', uid, 'games', gameId), { score, completed: true, completedAt: serverTimestamp() })
+  batch.update(doc(db, 'users', uid, 'games', gameId), { score, hits, completed: true, completedAt: serverTimestamp() })
   batch.set(doc(db, 'scoreCredits', `${uid}_${gameId}`), { uid, gameId, score, createdAt: serverTimestamp() })
   batch.update(doc(db, 'leaderboard', uid), {
     totalScore: increment(score),

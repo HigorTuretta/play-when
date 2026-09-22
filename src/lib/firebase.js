@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
-import { getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore'
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
+import { connectAuthEmulator, getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { connectFirestoreEmulator, getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 
 const firebaseConfig = {
@@ -14,6 +15,19 @@ const firebaseConfig = {
 }
 
 export const app = initializeApp(firebaseConfig)
+
+// App Check attests that requests come from this app, which keeps scripts holding the
+// public API key from running up reads and writes. It turns on when a reCAPTCHA Enterprise
+// site key is configured; enforce it in the Firebase console once its metrics look right.
+const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY
+if (appCheckSiteKey) {
+  if (import.meta.env.DEV) self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  })
+}
+
 export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
@@ -26,6 +40,16 @@ try {
 }
 export { db }
 
-export const getAnalyticsInstance = () => isSupported()
-  .then((supported) => supported ? getAnalytics(app) : null)
-  .catch(() => null)
+// `npm run dev:emulators` (with `npm run emulators` running) points the app at local
+// Auth and Firestore emulators instead of production.
+if (import.meta.env.VITE_USE_EMULATORS === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+}
+
+export function getAnalyticsInstance() {
+  if (!firebaseConfig.measurementId) return Promise.resolve(null)
+  return isSupported()
+    .then((supported) => supported ? getAnalytics(app) : null)
+    .catch(() => null)
+}

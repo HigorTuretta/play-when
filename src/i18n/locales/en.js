@@ -20,7 +20,7 @@ export default {
   language:'Language', developedBy:'Made by', github:'GitHub', bc:'BC', signIn:'Continue with Google', signOut:'Sign out', account:'Account',
   streakUnit:'days', streakHint:'Daily streak: you lose it after two days without playing.',
  loginToSave:'Sign in to save your points!',
-  profileTitle:'Choose your leaderboard name', profileCopy:'Your Google name and photo are never shown. Pick only a nickname.', nickname:'Nickname', nicknamePlaceholder:'e.g. Turetta', saveNickname:'Save and continue', nicknameHint:'2 to 24 characters.',
+  profileTitle:'Choose your leaderboard name', profileCopy:'Your Google name and photo are never shown. Pick only a nickname.', nickname:'Nickname', nicknamePlaceholder:'e.g. Turetta', saveNickname:'Save and continue', nicknameHint:'2 to 24 characters: letters, numbers, spaces and _ . -',
   skip:'Skip', next:'Next', gotIt:'Got it, let’s play',
   onboard:[
     { icon:'1', title:'Four cards, one timeline', copy:'Every round deals four shuffled events. Easy to understand, hard to nail: sort them from oldest to newest.' },

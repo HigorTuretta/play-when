@@ -1,4 +1,13 @@
 {
   "indexes": [],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "attempts", "fieldPath": "orderedIds", "ttl": false, "indexes": [] },
+    { "collectionGroup": "attempts", "fieldPath": "createdAt", "ttl": false, "indexes": [] },
+    { "collectionGroup": "games", "fieldPath": "roundIds", "ttl": false, "indexes": [] },
+    { "collectionGroup": "games", "fieldPath": "hits", "ttl": false, "indexes": [] },
+    { "collectionGroup": "games", "fieldPath": "createdAt", "ttl": false, "indexes": [] },
+    { "collectionGroup": "games", "fieldPath": "completedAt", "ttl": false, "indexes": [] },
+    { "collectionGroup": "scoreCredits", "fieldPath": "createdAt", "ttl": false, "indexes": [] },
+    { "collectionGroup": "leaderboard", "fieldPath": "updatedAt", "ttl": false, "indexes": [] }
+  ]
 }

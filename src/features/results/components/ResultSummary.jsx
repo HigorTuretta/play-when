@@ -1,12 +1,12 @@
 import React from 'react'
 import { textForEvent } from '../../../i18n'
 import { useI18n } from '../../../i18n/LanguageProvider'
-import { getCachedImage } from '../../game/api/imageService'
+import { getEventImage } from '../../game/api/imageService'
 import { accentFor } from '../../game/categories'
 
 function SummaryCard({ card, hit }) {
   const { language, formatYear } = useI18n()
-  const image = getCachedImage(card)
+  const image = getEventImage(card)
 
   return (
     <div className="summary-card">

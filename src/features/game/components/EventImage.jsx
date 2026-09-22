@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { getCachedImage, resolveEventImage } from '../api/imageService'
+import { getEventImage } from '../api/imageService'
 import { iconFor } from '../categories'
 
 function ImageFallback({ category }) {
@@ -13,36 +13,17 @@ function ImageFallback({ category }) {
   )
 }
 
+// The credit links to the article by id and does not name it: article titles often
+// contain the year, and this link is in the page before the answer is revealed.
+const CREDIT = 'Wikipedia'
+
 export default function EventImage({ event, showCredit = false }) {
-  const [image, setImage] = useState(() => getCachedImage(event))
+  const image = getEventImage(event)
   const [failed, setFailed] = useState(false)
 
-  useEffect(() => {
-    setFailed(false)
-    const cached = getCachedImage(event)
-    if (cached?.src) {
-      setImage(cached)
-      return undefined
-    }
+  useEffect(() => setFailed(false), [image?.src])
 
-    setImage(null)
-    const controller = new AbortController()
-    resolveEventImage(event, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return
-        if (result) setImage(result)
-        else setFailed(true)
-      })
-      .catch((error) => {
-        if (error?.name !== 'AbortError') setFailed(true)
-      })
-
-    return () => controller.abort()
-  }, [event])
-
-  if (!image || failed) return <ImageFallback category={event.category} />
-
-  const credit = [image.artist, image.license].filter(Boolean).join(' · ') || 'Wikimedia Commons'
+  if (!image?.src || failed) return <ImageFallback category={event.category} />
 
   return (
     <>
@@ -60,10 +41,10 @@ export default function EventImage({ event, showCredit = false }) {
         href={image.pageUrl}
         target="_blank"
         rel="noreferrer"
-        title={credit}
+        title={CREDIT}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {credit}
+        {CREDIT}
       </a>
     </>
   )

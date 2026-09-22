@@ -4,10 +4,13 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { applicationDefault, initializeApp } from 'firebase-admin/app'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import {
+  ROUND_COUNT, isGuestRound, publicCard, resetStaticRoundsDir, roundIdFor, staticRoundsDir, writeStaticRound,
+} from './lib/rounds.mjs'
+import { resolveImages } from './lib/wikipedia.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const factsPath = path.resolve(__dirname, '../private-data/facts.json')
-const ROUND_COUNT = 2500
 const ROUND_SIZE = 4
 const SEED = 0x54494d45
 
@@ -64,12 +67,21 @@ for (const fact of facts) {
   writer.set(db.doc(`factAnswers/${fact.id}`), { year, sourceUrl, datePrecision, updatedAt: FieldValue.serverTimestamp() })
 }
 
+// The client reads rounds from public/rounds/<version>/, not from Firestore. If a reseed
+// changes round content, bump STATIC_ROUNDS_VERSION: those files are cached as immutable.
+const images = await resolveImages(facts)
+await resetStaticRoundsDir()
+
 const rand = mulberry32(SEED)
 for (let index = 1; index <= ROUND_COUNT; index += 1) {
   const selected = makeRound(facts, rand)
-  const roundId = `round-${String(index).padStart(4, '0')}`
+  const roundId = roundIdFor(index)
   const publicCards = shuffled(selected, rand).map(({ year, sourceUrl, datePrecision, ...card }) => card)
   const correct = [...selected].sort((a, b) => a.year - b.year)
+  const answer = {
+    correctOrder: correct.map((item) => item.id),
+    years: Object.fromEntries(selected.map((item) => [item.id, item.year])),
+  }
 
   writer.set(db.doc(`rounds/${roundId}`), {
     cards: publicCards,
@@ -78,22 +90,16 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
     updatedAt: FieldValue.serverTimestamp(),
   })
 
-  writer.set(db.doc(`roundAnswers/${roundId}`), {
-    correctOrder: correct.map((item) => item.id),
-    years: Object.fromEntries(selected.map((item) => [item.id, item.year])),
-    updatedAt: FieldValue.serverTimestamp(),
-  })
-}
+  writer.set(db.doc(`roundAnswers/${roundId}`), { ...answer, updatedAt: FieldValue.serverTimestamp() })
 
-writer.set(db.doc('config/game'), {
-  factCount: facts.length,
-  roundCount: ROUND_COUNT,
-  roundsPerGame: 6,
-  cardsPerRound: 4,
-  dailyLimit: 3,
-  updatedAt: FieldValue.serverTimestamp(),
-})
+  await writeStaticRound(
+    roundId,
+    publicCards.map((card) => publicCard(card, images.get(card.id))),
+    isGuestRound(index) ? answer : null,
+  )
+}
 
 await writer.close()
 console.log(`Seed concluído: ${facts.length} fatos + ${ROUND_COUNT} rodadas públicas/privadas.`)
-console.log('As respostas ficam apenas em factAnswers/ e roundAnswers/, bloqueadas pelas Security Rules.')
+console.log(`Rodadas estáticas em ${staticRoundsDir}; respostas do pool convidado incluídas.`)
+console.log('As respostas das rodadas ranqueadas ficam apenas em roundAnswers/, bloqueadas pelas Security Rules.')

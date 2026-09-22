@@ -5,10 +5,14 @@ import { inferCountryCode } from '../../lib/country'
 export const NICKNAME_MIN = 2
 export const NICKNAME_MAX = 24
 
-export const normalizeNickname = (nickname) => nickname.trim().replace(/\s+/g, ' ')
+// Letters and digits in any script, plus _ . - and single inner spaces. Mirrors
+// validNickname() in firestore.rules, which rejects anything else.
+const NICKNAME_PATTERN = /^[\p{L}\p{N}_.-]+( [\p{L}\p{N}_.-]+)*$/u
+
+export const normalizeNickname = (nickname) => nickname.normalize('NFC').trim().replace(/\s+/g, ' ')
 export const isValidNickname = (nickname) => {
-  const { length } = normalizeNickname(nickname)
-  return length >= NICKNAME_MIN && length <= NICKNAME_MAX
+  const clean = normalizeNickname(nickname)
+  return clean.length >= NICKNAME_MIN && clean.length <= NICKNAME_MAX && NICKNAME_PATTERN.test(clean)
 }
 
 export async function getProfile(uid) {
