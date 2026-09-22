@@ -106,6 +106,8 @@ export async function creditDailyStreak(uid, daily) {
 // Rounds an account has already answered are refused on game creation, and accounts from
 // before roundCursor were dealt rounds at random, so their cursor is not a reliable
 // starting point. Reading the attempt of each candidate finds a clean block in one pass.
+// The walk is tied to the cursor it started from: it only describes where this player is
+// while the stored cursor still reads that value.
 async function findUnplayedRounds(uid, from) {
   const roundIds = []
   let position = from
@@ -131,35 +133,44 @@ async function findUnplayedRounds(uid, from) {
   }
 
   if (roundIds.length < TOTAL_ROUNDS) throw new Error('round-selection-failed')
-  return { roundIds, cursor }
+  return { from, roundIds, cursor }
 }
 
 // The daily document is merged, not replaced: replacing it would drop the streak fields,
-// which the rules refuse.
+// which the rules refuse. Everything the game is built from is read inside the
+// transaction: two tabs starting a game at the same time each retry against the other's
+// commit, and a block chosen from the cursor as it was before that commit would deal both
+// of them the same rounds and spend two of the day's plays on one set.
 export async function startGame(uid) {
-  const snap = await getDoc(dailyRef(uid))
-  const stored = snap.exists() ? snap.data() : {}
-  if (toDailyState(stored).plays >= DAILY_LIMIT) throw new Error('daily-limit')
-
-  let scanFrom = stored.roundCursor || 0
-  let selection = { roundIds: rankedRoundIds(uid, scanFrom), cursor: scanFrom + TOTAL_ROUNDS }
-  if (selection.roundIds.some((roundId) => !roundId)) selection = await findUnplayedRounds(uid, scanFrom)
+  let walk = null
   let lastError = null
 
   for (let attempt = 0; attempt < START_ATTEMPTS; attempt += 1) {
     const id = newGameId()
-    const { roundIds, cursor } = selection
+    let readCursor = 0
 
     try {
       return await runTransaction(db, async (tx) => {
-        const current = await tx.get(dailyRef(uid))
-        const daily = toDailyState(current.exists() ? current.data() : {})
+        const snap = await tx.get(dailyRef(uid))
+        const stored = snap.exists() ? snap.data() : {}
+        const daily = toDailyState(stored)
         if (daily.plays >= DAILY_LIMIT) throw new Error('daily-limit')
+
+        const cursor = stored.roundCursor || 0
+        readCursor = cursor
+        // A walk is only good for the cursor it was made from. If the transaction is
+        // retried because another device moved the cursor, the walk no longer says where
+        // this player is, so the block at the cursor just read is dealt instead; the loop
+        // walks again if the rules refuse it.
+        const selection = walk?.from === cursor
+          ? walk
+          : { roundIds: rankedRoundIds(uid, cursor), cursor: cursor + TOTAL_ROUNDS }
+        if (selection.roundIds.some((roundId) => !roundId)) throw new Error('pool-exhausted')
         const plays = daily.plays + 1
 
         tx.set(gameRef(uid, id), {
           uid,
-          roundIds,
+          roundIds: selection.roundIds,
           score: 0,
           completed: false,
           createdAt: serverTimestamp(),
@@ -169,17 +180,18 @@ export async function startGame(uid) {
           day: serverTimestamp(),
           plays,
           currentGameId: id,
-          roundCursor: cursor,
+          roundCursor: selection.cursor,
           updatedAt: serverTimestamp(),
         }, { merge: true })
 
-        return { game: { id, roundIds, guest: false }, daily: { ...daily, plays } }
+        return { game: { id, roundIds: selection.roundIds, guest: false }, daily: { ...daily, plays } }
       })
     } catch (error) {
       if (error?.code !== 'permission-denied') throw error
       lastError = error
-      selection = await findUnplayedRounds(uid, scanFrom)
-      scanFrom = selection.cursor
+      // Walking again from the cursor the refused attempt read: a round taken in the
+      // meantime now has an attempt on record, so the next walk steps over it.
+      walk = await findUnplayedRounds(uid, readCursor)
     }
   }
 
