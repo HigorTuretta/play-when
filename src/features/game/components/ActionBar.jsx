@@ -31,7 +31,7 @@ export default function ActionBar({ reveal, busy, isLastRound, onSubmit, onNext 
         </>
       ) : (
         <>
-          <p className="drag-hint">{t.dragHint}<span>{t.imageDisclaimer}</span></p>
+          <p className="drag-hint"><span className="drag-hint-text">{t.dragHint}</span><small>{t.imageDisclaimer}</small></p>
           <button className="primary" onClick={onSubmit} disabled={busy}>{t.submit} ✓</button>
         </>
       )}

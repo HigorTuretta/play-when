@@ -3,6 +3,8 @@ import { useRouter } from '../../app/router'
 import { GITHUB_URL, ROUTES } from '../../config/constants'
 import { useI18n } from '../../i18n/LanguageProvider'
 
+const TAGLINE = 'Six rounds. Four cards. One timeline.'
+
 const Dot = () => <span className="footer-dot">•</span>
 
 export default function SiteFooter() {
@@ -11,6 +13,7 @@ export default function SiteFooter() {
 
   return (
     <footer className="site-footer">
+      <p className="footer-tagline">{TAGLINE}</p>
       <button onClick={() => navigate(ROUTES.privacy)}>{t.privacy}</button>
       <Dot />
       <button onClick={() => navigate(ROUTES.terms)}>{t.terms}</button>

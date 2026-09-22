@@ -327,11 +327,19 @@
   flex-wrap: wrap;
   margin-top: 18px;
   padding: 14px 2px;
-  background: linear-gradient(180deg, rgba(244,239,227,0), var(--bg) 22%);
+  background: var(--bg);
+}
+.actions::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: -22px;
+  height: 22px;
+  background: linear-gradient(180deg, rgba(244,239,227,0), var(--bg));
+  pointer-events: none;
 }
 .actions .feedback { flex: 1 1 320px; animation: riseIn .3s ease-out both; }
 .drag-hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; max-width: 56ch; }
-.drag-hint span { display: block; margin-top: 2px; font-size: 12px; color: var(--muted-2); font-style: italic; }
+.drag-hint small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted-2); font-style: italic; }
 
 .dust-burst {
   position: fixed;
