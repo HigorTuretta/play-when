@@ -8,7 +8,7 @@
 
 **Você sabe *quando* aconteceu… ou só acha que sabe?**
 
-[![Jogar agora](https://img.shields.io/badge/▶_Jogar_agora-201f1c?style=for-the-badge)](https://tempo-certo-6ccc2.web.app/)
+[![Jogar agora](https://img.shields.io/badge/▶_Jogar_agora-201f1c?style=for-the-badge)](https://playwhen.netlify.app/)
 
 ![React](https://img.shields.io/badge/React_18-20232a?style=flat-square&logo=react&logoColor=61dafb)
 ![Vite](https://img.shields.io/badge/Vite_6-646cff?style=flat-square&logo=vite&logoColor=white)
