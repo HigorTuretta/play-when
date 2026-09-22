@@ -90,6 +90,27 @@ Production build:
 npm run build
 ```
 
+### Project structure
+
+```text
+src/
+├── app/            App shell, providers and client-side router
+├── components/     Shared UI (layout: header, footer; ui: modal, banners)
+├── config/         Routes, storage keys and environment constants
+├── features/
+│   ├── auth/         Google sign-in, profile and nickname
+│   ├── game/         Game state, rounds, cards, drag-and-drop, scoring
+│   ├── home/         Landing page
+│   ├── leaderboard/  Top 10 ranking
+│   ├── legal/        Privacy policy and terms
+│   ├── onboarding/   First-game tutorial
+│   └── results/      End-of-game summary and sharing
+├── hooks/          Generic React hooks
+├── i18n/           Language provider and PT-BR / EN locales
+├── lib/            Firebase, analytics, storage and country helpers
+└── styles/         Design tokens and stylesheets split by area
+```
+
 Repository: [HigorTuretta/play-when](https://github.com/HigorTuretta/play-when)
 
 ## 📄 License / content notes
