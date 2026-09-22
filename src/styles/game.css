@@ -78,7 +78,6 @@
   overflow: hidden;
   box-shadow: 6px 7px 0 var(--ink);
   cursor: grab;
-  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 
