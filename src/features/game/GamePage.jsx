@@ -1,5 +1,6 @@
 import React from 'react'
 import ErrorBanner from '../../components/ui/ErrorBanner'
+import { errorText } from '../../i18n'
 import { useI18n } from '../../i18n/LanguageProvider'
 import ActionBar from './components/ActionBar'
 import CardBoard from './components/CardBoard'
@@ -22,7 +23,7 @@ export default function GamePage() {
     <>
       <GameHeader round={round} streak={streak} score={score} />
       <div className="progress-track"><div className="progress-value" style={{ width: `${progress}%` }} /></div>
-      <ErrorBanner message={error && t.genericError} />
+      <ErrorBanner message={error && errorText(t, error)} />
       {ready ? (
         <>
           <CardBoard cards={cards} reveal={reveal} onMove={moveCard} onReorder={reorder} />

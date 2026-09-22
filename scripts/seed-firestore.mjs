@@ -32,17 +32,32 @@ function shuffled(items, rand) {
   return out
 }
 
+// A round deals four different categories, so no card repeats another's subject, and four
+// different years, so the correct order is never ambiguous. Walking a shuffled pool and
+// keeping the first fact of each unseen category picks the categories in proportion to how
+// many facts they have, which keeps individual facts from repeating too often.
 function makeRound(facts, rand) {
   for (let tries = 0; tries < 200; tries += 1) {
-    const cards = shuffled(facts, rand).slice(0, ROUND_SIZE)
-    if (new Set(cards.map((item) => item.year)).size === ROUND_SIZE) return cards
+    const cards = []
+    const categories = new Set()
+    const years = new Set()
+
+    for (const fact of shuffled(facts, rand)) {
+      if (categories.has(fact.category) || years.has(fact.year)) continue
+      categories.add(fact.category)
+      years.add(fact.year)
+      cards.push(fact)
+      if (cards.length === ROUND_SIZE) return cards
+    }
   }
-  throw new Error('Could not build a round with four distinct years.')
+  throw new Error('Could not build a round with four distinct categories and years.')
 }
 
 const facts = JSON.parse(await fs.readFile(factsPath, 'utf8'))
 if (facts.length !== 500) throw new Error(`Expected exactly 500 facts, found ${facts.length}.`)
 if (new Set(facts.map((item) => item.id)).size !== facts.length) throw new Error('Duplicate fact ids found.')
+const categoryCount = new Set(facts.map((item) => item.category)).size
+if (categoryCount < ROUND_SIZE) throw new Error(`A round needs ${ROUND_SIZE} categories, the pool has ${categoryCount}.`)
 
 const PROJECT_ID =
   process.env.FIREBASE_PROJECT_ID ||

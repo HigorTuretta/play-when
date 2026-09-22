@@ -4,6 +4,7 @@ import ShuffleArt from '../../components/ui/ShuffleArt'
 import { useAuth } from '../auth/AuthProvider'
 import { DAILY_LIMIT } from '../game/constants'
 import { useGame } from '../game/GameProvider'
+import { errorText } from '../../i18n'
 import { useI18n } from '../../i18n/LanguageProvider'
 
 function AttemptMeter({ plays, remaining }) {
@@ -26,7 +27,7 @@ export default function HomePage({ onStart }) {
 
   return (
     <>
-      <ErrorBanner message={(authError || gameError) && t.genericError} />
+      <ErrorBanner message={(authError || gameError) && errorText(t, gameError || authError)} />
       <section className="home">
         <div className="home-copy">
           <h1>{t.startTitle}</h1>
