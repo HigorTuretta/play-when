@@ -1,0 +1,10 @@
+@import './tokens.css';
+@import './animations.css';
+@import './base.css';
+@import './layout.css';
+@import './home.css';
+@import './loader.css';
+@import './game.css';
+@import './pages.css';
+@import './modals.css';
+@import './responsive.css';

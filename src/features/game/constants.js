@@ -1,0 +1,9 @@
+export const TOTAL_ROUNDS = 6
+export const ROUND_SIZE = 4
+export const DAILY_LIMIT = 3
+export const ROUND_POOL_SIZE = 2500
+export const POINTS_PER_CARD = 25
+export const PERFECT_BONUS = 50
+export const STREAK_BONUS_STEP = 20
+export const STREAK_WINDOW_MS = 3 * 24 * 60 * 60 * 1000
+export const GREAT_SCORE = 620
