@@ -11,7 +11,6 @@ import { useAuth } from '../auth/AuthProvider'
 import { leaderboardEntryId } from './entryId'
 
 const ROW_STAGGER_MS = 45
-const BOARDS = ['ranked', 'legacy']
 
 function LeaderboardRow({ row, index, isYou }) {
   const { t } = useI18n()
@@ -110,24 +109,7 @@ export default function LeaderboardPage() {
         <p className="subtitle">{t.leaderboardCopy}</p>
       </header>
 
-      <div className="board-tabs" role="tablist" aria-label={t.leaderboardTabs.label}>
-        {BOARDS.map((name) => (
-          <button
-            key={name}
-            type="button"
-            role="tab"
-            id={`board-tab-${name}`}
-            aria-selected={board === name}
-            aria-controls="board-panel"
-            className={board === name ? 'is-active' : ''}
-            onClick={() => setBoard(name)}
-          >
-            {t.leaderboardTabs[name]}
-          </button>
-        ))}
-      </div>
-      <div id="board-panel" role="tabpanel" aria-labelledby={`board-tab-${board}`}>
-        {board === 'legacy' && <p className="board-note">{t.leaderboardTabs.legacyNote}</p>}
+      <div id="board-panel" role="tabpanel" aria-labelledby={`board-tab-${board}`}>      
         <Board board={board} />
       </div>
 

@@ -8,12 +8,7 @@ export const rankingContent = {
           'Cada rodada é registrada no momento em que é jogada, e a pontuação é recalculada a partir das respostas registradas antes de ser somada. Cada conta pode jogar até três partidas ranqueadas por dia.',
         ],
       },
-      {
-        title: 'O que aparece aqui',
-        paragraphs: [
-          'Apenas o apelido escolhido pelo jogador, a bandeira do país, o número de partidas e a pontuação. Nome, foto e e-mail da conta Google nunca são exibidos.',
-        ],
-      },
+
     ],
   },
   en: {
@@ -25,12 +20,7 @@ export const rankingContent = {
           'Every round is recorded as it is played, and the score is recalculated from the recorded answers before it is added. Each account can play up to three ranked games a day.',
         ],
       },
-      {
-        title: 'What is shown here',
-        paragraphs: [
-          "Only the nickname the player chose, their country flag, the number of games and the score. The Google account's name, photo and e-mail are never shown.",
-        ],
-      },
+
     ],
   },
 }
