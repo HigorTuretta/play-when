@@ -138,46 +138,7 @@
     transform: scale(1.5);
   }
 }
-@keyframes dust1 {
-  0% {
-    opacity: 0;
-    transform: translate3d(var(--dust-start-x), 4px, 0) scale(0.2);
-  }
-  16% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--dust-x), var(--dust-y), 0) scale(var(--dust-scale));
-  }
-}
-@keyframes dust2 {
-  0% {
-    opacity: 0;
-    transform: translate3d(var(--dust-start-x), 4px, 0) scale(0.2);
-  }
-  16% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--dust-x), var(--dust-y), 0) scale(var(--dust-scale));
-  }
-}
-@keyframes dust3 {
-  0% {
-    opacity: 0;
-    transform: translate3d(var(--dust-start-x), 4px, 0) scale(0.2);
-  }
-  16% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--dust-x), var(--dust-y), 0) scale(var(--dust-scale));
-  }
-}
-@keyframes dust4 {
+@keyframes dustPuff {
   0% {
     opacity: 0;
     transform: translate3d(var(--dust-start-x), 4px, 0) scale(0.2);

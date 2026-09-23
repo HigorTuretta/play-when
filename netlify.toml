@@ -7,7 +7,16 @@
   # domain is also written into the frame-src of the CSP below and in firebase.json, where
   # secrets scanning finds it in the repository itself; it is <project-id>.firebaseapp.com,
   # served in a response header to every visitor, and the project id is already listed here.
-  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_AUTH_DOMAIN,VITE_GITHUB_URL,VITE_APPCHECK_SITE_KEY"
+  # VITE_PUBLIC_SITE_URL is the public address of the site, printed on every page.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_AUTH_DOMAIN,VITE_GITHUB_URL,VITE_APPCHECK_SITE_KEY,VITE_PUBLIC_SITE_URL,GOOGLE_SITE_VERIFICATION"
+
+# Routing
+# -------
+# Every public page is prerendered to dist/<path>.html, and `npm run build` writes
+# dist/_redirects with a 200 rewrite from each clean address (/sobre) to its file
+# (/sobre.html), plus /desafio/* and /challenge/*. There is deliberately no catch-all SPA
+# fallback: an unknown address gets dist/404.html with a real 404 status, which keeps
+# search engines from indexing endless copies of the home page.
 
 # Keep in sync with the hosting headers in firebase.json. The auth domain in frame-src must
 # match VITE_FIREBASE_AUTH_DOMAIN.
@@ -33,8 +42,27 @@
   for = "/rounds/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+    X-Robots-Tag = "noindex"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Icons and social images change rarely but keep their names, so they are cached for a
+# week rather than forever.
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/og/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Challenge links are personal and endless in number: playable, never indexed.
+[[headers]]
+  for = "/desafio/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/challenge/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"

@@ -8,8 +8,12 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/desafio/**",
+        "destination": "/desafio.html"
+      },
+      {
+        "source": "/challenge/**",
+        "destination": "/challenge.html"
       }
     ],
     "headers": [
@@ -73,7 +77,9 @@
           }
         ]
       }
-    ]
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
   },
   "emulators": {
     "auth": {

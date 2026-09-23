@@ -18,7 +18,7 @@ export default function DustBurst({ burst }) {
       {PUFFS.map((puff, i) => (
         <span
           key={`${burst.id}-${i}`}
-          className={`dust-puff puff-${i % 4}`}
+          className="dust-puff"
           style={{
             '--dust-start-x': `${puff.sx}px`,
             '--dust-x': `${puff.x}px`,

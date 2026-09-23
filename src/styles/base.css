@@ -8,10 +8,6 @@
   flex-direction: column;
   position: relative;
 }
-.center-shell {
-  justify-content: center;
-  align-items: center;
-}
 
 .eyebrow {
   margin: 0 0 12px;

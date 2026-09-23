@@ -9,4 +9,9 @@ export default defineConfig({
     // Firebase ships as its own chunks, loaded on demand; none of them is on the first paint.
     chunkSizeWarningLimit: 700,
   },
+  // `npm test`. The Firestore rules have their own suite (`npm run test:rules`), which
+  // needs the emulator.
+  test: {
+    include: ['tests/unit/**/*.test.js'],
+  },
 })

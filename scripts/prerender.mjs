@@ -13,6 +13,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { loadEnv } from 'vite'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
@@ -24,7 +25,8 @@ const template = await fs.readFile(path.join(dist, 'index.html'), 'utf8')
 
 // Search Console's HTML-tag verification (needed on a *.netlify.app address, where a DNS
 // record cannot be added). Set GOOGLE_SITE_VERIFICATION to the token Google shows.
-const verification = process.env.GOOGLE_SITE_VERIFICATION?.trim()
+const env = { ...loadEnv(process.env.MODE || 'production', root, ''), ...process.env }
+const verification = env.GOOGLE_SITE_VERIFICATION?.trim()
 const verificationTag = verification
   ? `<meta name="google-site-verification" content="${verification.replace(/"/g, '')}" />`
   : ''

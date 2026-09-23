@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:emulators": "vite --mode emulator",
     "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
-    "preview": "vite preview",
+    "preview": "node scripts/serve-dist.mjs",
     "seed:firestore": "node scripts/seed-firestore.mjs",
     "validate:facts": "node scripts/validate-facts.mjs",
     "validate:rounds": "node scripts/validate-rounds.mjs",

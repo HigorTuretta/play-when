@@ -626,22 +626,11 @@
     rgba(213, 194, 163, 0.8) 48%,
     transparent 76%
   );
+  animation-name: dustPuff;
   animation-duration: 0.8s;
   animation-timing-function: cubic-bezier(0.14, 0.72, 0.22, 1);
   animation-delay: var(--dust-delay);
   animation-fill-mode: forwards;
-}
-.dust-puff.puff-0 {
-  animation-name: dust1;
-}
-.dust-puff.puff-1 {
-  animation-name: dust2;
-}
-.dust-puff.puff-2 {
-  animation-name: dust3;
-}
-.dust-puff.puff-3 {
-  animation-name: dust4;
 }
 
 .mode-tag {
