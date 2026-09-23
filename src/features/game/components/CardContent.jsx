@@ -7,14 +7,14 @@ import EventImage from './EventImage'
 
 const stopDrag = (e) => e.stopPropagation()
 
-export default function CardContent({ card, revealed = false, status = '', correctPosition, onMoveLeft, onMoveRight }) {
+export default function CardContent({ card, revealed = false, status = '', correctPosition, dragRef, dragListeners, onMoveLeft, onMoveRight }) {
   const { language, t, formatYear } = useI18n()
   const text = textForEvent(card, language)
   const showControls = !revealed && (onMoveLeft || onMoveRight)
 
   return (
     <>
-      <div className="card-art" style={{ '--accent': accentFor(card.category) }}>
+      <div className="card-art" style={{ '--accent': accentFor(card.category) }} {...dragListeners}>
         <EventImage event={card} showCredit={revealed} />
         <span className="art-scrim" aria-hidden="true" />
         <span className="category-chip">{text.category}</span>

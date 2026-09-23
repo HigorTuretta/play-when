@@ -39,6 +39,9 @@
   .finish-actions { flex-direction: column; align-items: stretch; }
   .finish-actions .primary, .finish-actions .outline { justify-content: center; text-align: center; }
   .summary-cards, .comparison-chips { grid-template-columns: 1fr; }
+
+  .card-art { touch-action: none; }
+  .card-body { cursor: default; }
 }
 
 @media (prefers-reduced-motion: reduce) {
