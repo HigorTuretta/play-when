@@ -12,6 +12,7 @@ import {
   staticRoundsDir,
   staticRoundsDirFor,
 } from './lib/rounds.mjs'
+import { buildGameData } from './lib/gameData.mjs'
 
 const ROUND_SIZE = 4
 const TITLE_YEAR = /\b(?:1[0-9]{3}|20[0-9]{2})\b/
@@ -79,6 +80,13 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
   } else if (answer) {
     report(roundId, 'ranked round ships its answer publicly')
   }
+}
+
+// catalog.json and index.json are derived from the round files; a stale copy would deal
+// normal games from old text or pick ranked rounds from a wrong index.
+for (const [name, body] of Object.entries(await buildGameData(dir))) {
+  const current = await fs.readFile(path.join(dir, name), 'utf8').catch(() => null)
+  if (current !== body) report(name, 'is out of date; run `npm run build:game-data`')
 }
 
 console.log(`Checked ${ROUND_COUNT} rounds in ${path.basename(dir)}.`)

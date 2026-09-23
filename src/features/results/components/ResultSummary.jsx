@@ -32,8 +32,10 @@ export default function ResultSummary({ results }) {
   const { t } = useI18n()
 
   return (
-    <section className="summary-panel">
-      <p className="panel-label">{t.summaryTitle}</p>
+    <section className="summary-panel" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" className="panel-label">
+        {t.summaryTitle}
+      </h2>
       <div className="summary-rows">
         {results.map((round) => {
           const chronological = [...round.ordered].sort((a, b) => a.year - b.year)

@@ -8,7 +8,7 @@ const DEAL_STAGGER_MS = 70
 
 const animateLayoutChanges = (args) => defaultAnimateLayoutChanges({ ...args, wasDragging: true })
 
-export default function SortableCard({ card, index, count, reveal, onMove }) {
+export default function SortableCard({ card, index, count, reveal, locked, onMove }) {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function SortableCard({ card, index, count, reveal, onMove }) {
     isDragging,
   } = useSortable({
     id: card.id,
-    disabled: revealed,
+    disabled: locked,
     animateLayoutChanges,
     transition: SORT_TRANSITION,
   })
@@ -58,6 +58,7 @@ export default function SortableCard({ card, index, count, reveal, onMove }) {
       <CardContent
         card={card}
         revealed={revealed}
+        locked={locked}
         status={status}
         correctPosition={correctIndex + 1}
         dragRef={isMobile ? setActivatorNodeRef : undefined}

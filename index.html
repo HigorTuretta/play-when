@@ -3,65 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>When? — Jogo de cronologia e história</title>
-    <meta
-      name="description"
-      content="When? é um jogo diário de cronologia: organize fatos históricos do mais antigo ao mais recente, marque pontos e dispute o leaderboard."
-    />
-    <meta
-      name="keywords"
-      content="jogo de história, cronologia, quiz de história, jogo educativo, timeline game, history quiz, trivia, When?"
-    />
-    <meta name="author" content="Turetta" />
-    <meta
-      name="robots"
-      content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
-    />
+    <!--app-head-->
+    <title>When?</title>
+    <!--/app-head-->
     <meta name="theme-color" content="#f4efe3" />
-    <link rel="canonical" href="https://tempo-certo-6ccc2.web.app/" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="author" content="Turetta" />
+    <!--search-console-->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@600;700;800;900&display=swap"
     />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="pt_BR" />
-    <meta property="og:locale:alternate" content="en_US" />
-    <meta property="og:title" content="When? — Você sabe quando aconteceu?" />
-    <meta
-      property="og:description"
-      content="Ordene fatos históricos, descubra as datas e tente entrar no Top 10."
-    />
-    <meta property="og:url" content="https://tempo-certo-6ccc2.web.app/" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="When? — jogo diário de cronologia" />
-    <meta
-      name="twitter:description"
-      content="6 rodadas, 4 cartas e uma pergunta: sua noção de tempo está certa?"
-    />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "VideoGame",
-        "name": "When?",
-        "url": "https://tempo-certo-6ccc2.web.app/",
-        "description": "Jogo diário de cronologia em que o jogador organiza fatos históricos do mais antigo ao mais recente.",
-        "genre": ["Trivia", "Educational", "History"],
-        "gamePlatform": "Web Browser",
-        "applicationCategory": "GameApplication",
-        "operatingSystem": "Any",
-        "inLanguage": ["pt-BR", "en"],
-        "author": { "@type": "Person", "name": "Turetta" },
-        "isAccessibleForFree": true
-      }
-    </script>
   </head>
   <body>
-    <div id="root"></div>
-    <noscript>When? precisa de JavaScript para funcionar. / When? requires JavaScript.</noscript>
+    <div id="root"><!--app-html--></div>
+    <noscript>
+      <p class="noscript">
+        When? precisa de JavaScript para jogar. / When? needs JavaScript to play.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

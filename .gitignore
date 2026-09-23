@@ -11,3 +11,4 @@ service-account*.json
 .DS_Store
 .vscode/
 .idea/
+dist-ssr/

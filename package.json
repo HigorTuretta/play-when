@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:emulators": "vite --mode emulator",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "seed:firestore": "node scripts/seed-firestore.mjs",
     "validate:facts": "node scripts/validate-facts.mjs",
@@ -17,7 +17,10 @@
     "emulators": "npx --yes firebase-tools@14 emulators:start --only auth,firestore --project demo-play-when",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:game-data": "node scripts/build-game-data.mjs",
+    "test": "vitest run",
+    "seed:emulator": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node scripts/seed-emulator.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -37,6 +40,7 @@
     "firebase-admin": "^13.5.0",
     "globals": "^17.12.0",
     "prettier": "^3.9.9",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
   }
 }

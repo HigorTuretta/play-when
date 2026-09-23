@@ -10,6 +10,7 @@ const stopDrag = (e) => e.stopPropagation()
 export default function CardContent({
   card,
   revealed = false,
+  locked = revealed,
   status = '',
   correctPosition,
   dragRef,
@@ -19,7 +20,7 @@ export default function CardContent({
 }) {
   const { language, t, formatYear } = useI18n()
   const text = textForEvent(card, language)
-  const showControls = !revealed && (onMoveLeft || onMoveRight)
+  const showControls = !locked && (onMoveLeft || onMoveRight)
 
   return (
     <>

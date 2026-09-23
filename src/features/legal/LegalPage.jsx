@@ -1,35 +1,36 @@
 import React from 'react'
-import { useRouter } from '../../app/router'
-import { ROUTES } from '../../config/constants'
+import { Link } from '../../app/router'
+import { pathFor } from '../../config/routes'
 import { DEFAULT_LANGUAGE } from '../../i18n'
 import { useI18n } from '../../i18n/LanguageProvider'
 import { legalContent } from './legalContent'
 
 export default function LegalPage({ type }) {
   const { language, t } = useI18n()
-  const { navigate } = useRouter()
   const [title, ...paragraphs] =
     legalContent[type][language] || legalContent[type][DEFAULT_LANGUAGE]
 
   return (
     <article className="page-card legal-page">
-      <div className="legal-tabs">
-        <button
+      <nav className="legal-tabs" aria-label={t.nav.footer}>
+        <Link
+          to={pathFor('privacy', language)}
           className={type === 'privacy' ? 'is-active' : ''}
-          onClick={() => navigate(ROUTES.privacy)}
+          aria-current={type === 'privacy' ? 'page' : undefined}
         >
           {t.privacy}
-        </button>
-        <button
+        </Link>
+        <Link
+          to={pathFor('terms', language)}
           className={type === 'terms' ? 'is-active' : ''}
-          onClick={() => navigate(ROUTES.terms)}
+          aria-current={type === 'terms' ? 'page' : undefined}
         >
           {t.terms}
-        </button>
-      </div>
+        </Link>
+      </nav>
       <h1>{title}</h1>
-      {paragraphs.map((paragraph, i) => (
-        <p key={i}>{paragraph}</p>
+      {paragraphs.map((paragraph) => (
+        <p key={paragraph}>{paragraph}</p>
       ))}
       <small>{t.lastUpdated}</small>
     </article>

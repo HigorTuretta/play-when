@@ -14,6 +14,7 @@ import {
   writeStaticRound,
 } from './lib/rounds.mjs'
 import { resolveImages } from './lib/wikipedia.mjs'
+import { writeGameData } from './lib/gameData.mjs'
 
 const PROJECT_ID =
   process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'tempo-certo-6ccc2'
@@ -45,6 +46,9 @@ for (const snap of roundSnaps) {
   const cards = snap.data().cards.map((card) => publicCard(card, images.get(card.id)))
   await writeStaticRound(snap.id, cards, answers.get(snap.id))
 }
+
+// The normal-mode catalogue and the ranked round index are derived from these files.
+await writeGameData()
 
 const withoutImage = [...images.values()].filter((image) => !image).length
 console.log(

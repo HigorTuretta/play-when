@@ -1,21 +1,27 @@
 import React, { useEffect, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
+import Breadcrumbs from '../../components/content/Breadcrumbs'
+import ContentSections from '../../components/content/ContentSections'
+import PlayCallout from '../../components/content/PlayCallout'
+import { pathFor } from '../../config/routes'
+import { rankingContent } from '../../content/pages/ranking'
 import { useI18n } from '../../i18n/LanguageProvider'
 import { countryFlag } from '../../lib/country'
 import { useAuth } from '../auth/AuthProvider'
-import { getLeaderboard } from './leaderboardService'
+import { leaderboardEntryId } from './entryId'
 
 const ROW_STAGGER_MS = 45
+const BOARDS = ['ranked', 'legacy']
 
 function LeaderboardRow({ row, index, isYou }) {
   const { t } = useI18n()
   return (
-    <div
+    <li
       className={`leaderboard-row ${isYou ? 'is-you' : ''}`}
       style={{ '--row-delay': `${index * ROW_STAGGER_MS}ms` }}
     >
       <span className="rank">{row.rank}</span>
-      <span className="flag" title={row.countryCode}>
+      <span className="flag" title={row.countryCode} role="img" aria-label={row.countryCode}>
         {countryFlag(row.countryCode)}
       </span>
       <strong>{isYou ? t.you : row.nickname}</strong>
@@ -25,54 +31,108 @@ function LeaderboardRow({ row, index, isYou }) {
       <b>
         {Number(row.totalScore || 0).toLocaleString()} {t.points}
       </b>
-    </div>
+    </li>
+  )
+}
+
+// The list itself is loaded in the browser (it changes all the time); the page around it
+// is prerendered. The list area keeps a minimum height so the page does not jump.
+function Board({ board }) {
+  const { t } = useI18n()
+  const { user } = useAuth()
+  const [state, setState] = useState({ loading: true, rows: [] })
+  const [you, setYou] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    setState({ loading: true, rows: [] })
+    import('./leaderboardService')
+      .then(({ getLeaderboard }) => getLeaderboard(board))
+      .then((rows) => active && setState({ loading: false, rows }))
+      .catch(() => active && setState({ loading: false, rows: [] }))
+    return () => {
+      active = false
+    }
+  }, [board])
+
+  // Ranked entries are keyed by a hash of the uid; the legacy ones by the uid itself.
+  useEffect(() => {
+    let active = true
+    if (!user) setYou(null)
+    else if (board === 'legacy') setYou(user.uid)
+    else leaderboardEntryId(user.uid).then((id) => active && setYou(id))
+    return () => {
+      active = false
+    }
+  }, [user, board])
+
+  if (state.loading) {
+    return (
+      <div className="leaderboard-body center-loader" aria-busy="true">
+        <LoaderCircle className="spin" aria-hidden="true" />
+      </div>
+    )
+  }
+  if (!state.rows.length) {
+    return (
+      <div className="leaderboard-body">
+        <p className="empty-state">{t.noLeaderboard}</p>
+      </div>
+    )
+  }
+  return (
+    <ol className="leaderboard-body leaderboard-list">
+      {state.rows.map((row, index) => (
+        <LeaderboardRow key={row.id} row={row} index={index} isYou={row.id === you} />
+      ))}
+    </ol>
   )
 }
 
 export default function LeaderboardPage() {
-  const { t } = useI18n()
-  const { user } = useAuth()
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let active = true
-    getLeaderboard()
-      .then((data) => active && setRows(data))
-      .catch(() => {})
-      .finally(() => active && setLoading(false))
-    return () => {
-      active = false
-    }
-  }, [])
-
-  let content
-  if (loading)
-    content = (
-      <div className="center-loader">
-        <LoaderCircle className="spin" />
-      </div>
-    )
-  else if (!rows.length) content = <p className="empty-state">{t.noLeaderboard}</p>
-  else {
-    content = (
-      <div className="leaderboard-list">
-        {rows.map((row, index) => (
-          <LeaderboardRow key={row.id} row={row} index={index} isYou={row.id === user?.uid} />
-        ))}
-      </div>
-    )
-  }
+  const { t, language } = useI18n()
+  const [board, setBoard] = useState('ranked')
 
   return (
-    <section className="page-card leaderboard-page">
+    <article className="page-card leaderboard-page">
+      <Breadcrumbs
+        items={[
+          [t.home, pathFor('home', language)],
+          [t.nav.ranking, pathFor('ranking', language)],
+        ]}
+      />
       <div className="page-badge" aria-hidden="true">
         ★
       </div>
-      <p className="eyebrow">{t.leaderboard}</p>
-      <h1>{t.leaderboardTitle}</h1>
-      <p className="subtitle">{t.leaderboardCopy}</p>
-      {content}
-    </section>
+      <header>
+        <p className="eyebrow">{t.leaderboard}</p>
+        <h1>{t.leaderboardTitle}</h1>
+        <p className="subtitle">{t.leaderboardCopy}</p>
+      </header>
+
+      <div className="board-tabs" role="tablist" aria-label={t.leaderboardTabs.label}>
+        {BOARDS.map((name) => (
+          <button
+            key={name}
+            type="button"
+            role="tab"
+            id={`board-tab-${name}`}
+            aria-selected={board === name}
+            aria-controls="board-panel"
+            className={board === name ? 'is-active' : ''}
+            onClick={() => setBoard(name)}
+          >
+            {t.leaderboardTabs[name]}
+          </button>
+        ))}
+      </div>
+      <div id="board-panel" role="tabpanel" aria-labelledby={`board-tab-${board}`}>
+        {board === 'legacy' && <p className="board-note">{t.leaderboardTabs.legacyNote}</p>}
+        <Board board={board} />
+      </div>
+
+      <ContentSections sections={rankingContent[language].sections} />
+      <PlayCallout />
+    </article>
   )
 }

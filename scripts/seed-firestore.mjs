@@ -14,6 +14,7 @@ import {
   writeStaticRound,
 } from './lib/rounds.mjs'
 import { resolveImages } from './lib/wikipedia.mjs'
+import { writeGameData } from './lib/gameData.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const factsPath = path.resolve(__dirname, '../private-data/facts.json')
@@ -133,6 +134,9 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
     isGuestRound(index) ? answer : null,
   )
 }
+
+// The normal-mode catalogue and the ranked round index are derived from these files.
+await writeGameData()
 
 await writer.close()
 console.log(`Seed concluído: ${facts.length} fatos + ${ROUND_COUNT} rodadas públicas/privadas.`)

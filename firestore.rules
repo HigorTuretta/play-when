@@ -22,10 +22,14 @@ service cloud.firestore {
 
     // Letters and digits in any script, plus _ . - and single inner spaces. Rejects
     // invisible, control and bidi-override characters that could spoof leaderboard names.
-    // Keep in sync with NICKNAME_PATTERN in src/features/auth/profileService.js.
+    // Keep in sync with NICKNAME_PATTERN in src/features/auth/nickname.js.
     function validNickname(value) {
       return value is string && value.size() >= 2 && value.size() <= 24
         && value.matches('[\\p{L}\\p{N}_.-]+( [\\p{L}\\p{N}_.-]+)*');
+    }
+
+    function validUsedRounds(data) {
+      return data.get('usedRounds', '') is string && data.get('usedRounds', '').size() <= 1024;
     }
 
     function validCountry(value) {
@@ -85,12 +89,16 @@ service cloud.firestore {
     // hits reported for a round count only if its attempt belongs to the game being
     // closed (an attempt made in another game that shares a round id cannot count twice)
     // and is a permutation of the round's cards scored against the stored answer.
+    // A timed-out round (see /attempts) has no order and always scores zero.
     function hitsMatch(uid, gameId, roundId, hits) {
       let attempt = get(/databases/$(database)/documents/attempts/$(uid + '_' + roundId)).data;
       let correct = get(/databases/$(database)/documents/roundAnswers/$(roundId)).data.correctOrder;
       return attempt.gameId == gameId
-        && attempt.orderedIds.size() == 4 && attempt.orderedIds.toSet() == correct.toSet()
-        && hitCount(attempt.orderedIds, correct) == hits;
+        && (
+          (attempt.get('timedOut', false) == true && hits == 0)
+          || (attempt.orderedIds.size() == 4 && attempt.orderedIds.toSet() == correct.toSet()
+            && hitCount(attempt.orderedIds, correct) == hits)
+        );
     }
 
     // Mirrors scoreRound() in src/features/game/scoring.js: the perfect-round streak
@@ -110,10 +118,29 @@ service cloud.firestore {
     // checks the rest; the leaderboard only accepts points backed by that credit.
     function creditMatchesGame(uid, gameId, score) {
       let game = getAfter(/databases/$(database)/documents/users/$(uid)/games/$(gameId)).data;
-      return game.completed == true && game.score == score
+      return game.get('mode', '') == 'ranked' && game.completed == true && game.score == score
         && hitsMatch(uid, gameId, game.roundIds[3], game.hits[3])
         && hitsMatch(uid, gameId, game.roundIds[4], game.hits[4])
         && hitsMatch(uid, gameId, game.roundIds[5], game.hits[5]);
+    }
+
+    // Ranked rounds last 40 seconds. roundStarts.<n> is stamped with the server clock right
+    // before round n is shown, and its order is only accepted until 40 s plus a 5 s grace
+    // for network latency after that stamp. Keep in sync with RANKED_ROUND_SECONDS and
+    // RANKED_GRACE_SECONDS in src/features/game/constants.js.
+    function roundDeadline(game, roundIndex) {
+      return game.roundStarts[string(roundIndex)] + duration.value(45, 's');
+    }
+
+    // The round being answered must be the last one started in its game.
+    function isCurrentRound(game, roundIndex) {
+      return game.roundStarts is map && game.roundStarts.size() == roundIndex + 1
+        && string(roundIndex) in game.roundStarts;
+    }
+
+    // The public ranked leaderboard is keyed by a hash of the uid, not the uid itself.
+    function entryIdFor(uid) {
+      return hashing.sha256(uid).toHexString().lower();
     }
 
     match /profiles/{uid} {
@@ -128,30 +155,55 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Totals from before the ranked mode (every signed-in game counted, rounds had no
+    // timer). Kept as a read-only record; nothing writes to it any more.
     match /leaderboard/{uid} {
       allow get: if true;
       allow list: if request.query.limit != null && request.query.limit <= 10;
+      allow write: if false;
+    }
 
-      allow create: if isGoogleOwner(uid)
+    // Ranked games only. Entries are created with the profile (or before a player's first
+    // ranked game) and only grow through a credited, finished ranked game.
+    match /rankedLeaderboard/{entryId} {
+      allow get: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 10;
+
+      allow create: if isGoogleUser()
+        && entryId == entryIdFor(request.auth.uid)
         && request.resource.data.keys().hasOnly(['nickname', 'countryCode', 'totalScore', 'gamesPlayed', 'updatedAt'])
         && request.resource.data.totalScore == 0
         && request.resource.data.gamesPlayed == 0
         && request.resource.data.updatedAt == request.time
-        && getAfter(/databases/$(database)/documents/profiles/$(uid)).data.nickname == request.resource.data.nickname
-        && getAfter(/databases/$(database)/documents/profiles/$(uid)).data.countryCode == request.resource.data.countryCode;
+        && getAfter(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.nickname == request.resource.data.nickname
+        && getAfter(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.countryCode == request.resource.data.countryCode;
 
-      allow update: if isGoogleOwner(uid)
+      allow update: if isGoogleUser()
+        && entryId == entryIdFor(request.auth.uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalScore', 'gamesPlayed', 'lastGameId', 'updatedAt'])
         && request.resource.data.totalScore >= resource.data.totalScore
         && request.resource.data.gamesPlayed == resource.data.gamesPlayed + 1
         && request.resource.data.updatedAt == request.time
         && request.resource.data.lastGameId is string
-        && getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.uid == uid
-        && getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.gameId == request.resource.data.lastGameId
-        && getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/scoreCredits/$(request.auth.uid + '_' + request.resource.data.lastGameId)).data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/scoreCredits/$(request.auth.uid + '_' + request.resource.data.lastGameId)).data.gameId == request.resource.data.lastGameId
+        && getAfter(/databases/$(database)/documents/scoreCredits/$(request.auth.uid + '_' + request.resource.data.lastGameId)).data.createdAt == request.time
         && request.resource.data.totalScore == resource.data.totalScore
-          + getAfter(/databases/$(database)/documents/scoreCredits/$(uid + '_' + request.resource.data.lastGameId)).data.score;
+          + getAfter(/databases/$(database)/documents/scoreCredits/$(request.auth.uid + '_' + request.resource.data.lastGameId)).data.score;
 
+      allow delete: if false;
+    }
+
+    // The player's recently seen events, as one short string of event numbers, used to
+    // avoid dealing them again. Written at most once per game; readable only by its owner.
+    match /users/{uid}/state/history {
+      allow get: if isOwner(uid);
+      allow list: if false;
+      allow create, update: if isGoogleOwner(uid)
+        && request.resource.data.keys().hasOnly(['events', 'updatedAt'])
+        && request.resource.data.events is string
+        && request.resource.data.events.size() <= 4000
+        && request.resource.data.updatedAt == request.time;
       allow delete: if false;
     }
 
@@ -159,15 +211,16 @@ service cloud.firestore {
       allow get: if isOwner(uid);
       allow list: if false;
 
-      // roundCursor is the player's position in their own round order (see
-      // rankedRoundsFor in the client). It is only a hint: uniqueness of rounds is
-      // enforced by the attempt checks on game creation.
+      // usedRounds (a base64 bitset of the ranked rounds already dealt) and the older
+      // roundCursor are only hints for choosing rounds: uniqueness of rounds is enforced
+      // by the attempt checks on game creation.
       allow create: if isGoogleOwner(uid)
-        && request.resource.data.keys().hasOnly(['day', 'plays', 'currentGameId', 'roundCursor', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['day', 'plays', 'currentGameId', 'roundCursor', 'usedRounds', 'updatedAt'])
         && request.resource.data.day == request.time
         && request.resource.data.updatedAt == request.time
         && request.resource.data.plays == 1
         && request.resource.data.get('roundCursor', 0) is int
+        && validUsedRounds(request.resource.data)
         && request.resource.data.currentGameId is string
         && getAfter(/databases/$(database)/documents/users/$(uid)/games/$(request.resource.data.currentGameId)).data.uid == uid;
 
@@ -198,10 +251,11 @@ service cloud.firestore {
         );
 
       allow update: if isGoogleOwner(uid)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['day', 'plays', 'currentGameId', 'roundCursor', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['day', 'plays', 'currentGameId', 'roundCursor', 'usedRounds', 'updatedAt'])
         && request.resource.data.day == request.time
         && request.resource.data.updatedAt == request.time
         && request.resource.data.get('roundCursor', 0) is int
+        && validUsedRounds(request.resource.data)
         && request.resource.data.currentGameId is string
         && getAfter(/databases/$(database)/documents/users/$(uid)/games/$(request.resource.data.currentGameId)).data.uid == uid
         && playsToday(resource.data) < 3
@@ -215,8 +269,10 @@ service cloud.firestore {
       allow list: if false;
 
       allow create: if isGoogleOwner(uid)
-        && request.resource.data.keys().hasOnly(['uid', 'roundIds', 'score', 'completed', 'createdAt', 'completedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'mode', 'roundIds', 'roundStarts', 'score', 'completed', 'createdAt', 'completedAt'])
         && request.resource.data.uid == uid
+        && request.resource.data.mode == 'ranked'
+        && request.resource.data.roundStarts == {}
         && validRoundIds(request.resource.data.roundIds)
         && request.resource.data.score == 0
         && request.resource.data.completed == false
@@ -230,10 +286,26 @@ service cloud.firestore {
         && noAttempt(uid, request.resource.data.roundIds[4])
         && noAttempt(uid, request.resource.data.roundIds[5]);
 
+      // Starting round n stamps roundStarts.<n> with the server time. Rounds start in
+      // order, one at a time: round n only after round n-1 of this game was answered.
+      allow update: if isGoogleOwner(uid)
+        && resource.data.completed == false
+        && resource.data.get('mode', '') == 'ranked'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roundStarts'])
+        && resource.data.roundStarts.size() < 6
+        && request.resource.data.roundStarts.diff(resource.data.roundStarts).affectedKeys()
+          == [string(resource.data.roundStarts.size())].toSet()
+        && request.resource.data.roundStarts.diff(resource.data.roundStarts).addedKeys()
+          == [string(resource.data.roundStarts.size())].toSet()
+        && request.resource.data.roundStarts[string(resource.data.roundStarts.size())] == request.time
+        && (resource.data.roundStarts.size() == 0
+          || get(/databases/$(database)/documents/attempts/$(uid + '_' + resource.data.roundIds[resource.data.roundStarts.size() - 1])).data.gameId == gameId);
+
       // The score follows from the per-round hits, which are checked against the
       // attempts and answers (rounds 1-3 here, 4-6 in creditMatchesGame).
       allow update: if isGoogleOwner(uid)
         && resource.data.completed == false
+        && resource.data.get('mode', '') == 'ranked'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'hits', 'completed', 'completedAt'])
         && request.resource.data.completed == true
         && request.resource.data.completedAt == request.time
@@ -264,18 +336,28 @@ service cloud.firestore {
       // Only the order is stored; it is validated and scored when the game is finished.
       // Tying it to an open game of the player keeps answer reads to the rounds they
       // were actually dealt (18 per day), instead of an oracle over the whole pool.
+      // The order must be for the round started last and arrive before its deadline.
+      // After that, the round can only be closed as timed out: no order, zero points.
       allow create: if isGoogleUser()
-        && request.resource.data.keys().hasOnly(['uid', 'gameId', 'roundId', 'roundIndex', 'orderedIds', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'gameId', 'roundId', 'roundIndex', 'orderedIds', 'timedOut', 'createdAt'])
         && request.resource.data.uid == request.auth.uid
         && validRankedRoundId(request.resource.data.roundId)
         && attemptId == request.auth.uid + '_' + request.resource.data.roundId
         && request.resource.data.gameId is string
         && request.resource.data.roundIndex is int
         && request.resource.data.roundIndex >= 0 && request.resource.data.roundIndex < 6
-        && request.resource.data.orderedIds is list && request.resource.data.orderedIds.size() == 4
+        && request.resource.data.orderedIds is list
         && request.resource.data.createdAt == request.time
         && get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.completed == false
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.roundIds[request.resource.data.roundIndex] == request.resource.data.roundId;
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data.roundIds[request.resource.data.roundIndex] == request.resource.data.roundId
+        && isCurrentRound(get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data, request.resource.data.roundIndex)
+        && (
+          (request.resource.data.get('timedOut', false) == false
+            && request.resource.data.orderedIds.size() == 4
+            && request.time <= roundDeadline(get(/databases/$(database)/documents/users/$(request.auth.uid)/games/$(request.resource.data.gameId)).data, request.resource.data.roundIndex))
+          || (request.resource.data.get('timedOut', false) == true
+            && request.resource.data.orderedIds.size() == 0)
+        );
       allow update, delete: if false;
     }
 
@@ -292,7 +374,8 @@ service cloud.firestore {
     }
 
     // rounds, facts, factAnswers, config and the retired roundCredits collection are
-    // server-only: the client reads rounds from static files.
+    // server-only: the client reads rounds from static files. Everything not matched
+    // above is closed.
     match /{document=**} {
       allow read, write: if false;
     }

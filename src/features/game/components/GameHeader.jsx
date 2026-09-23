@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useAnimatedNumber } from '../../../hooks/useAnimatedNumber'
 import { useI18n } from '../../../i18n/LanguageProvider'
 import { TOTAL_ROUNDS } from '../constants'
+import RoundTimer from './RoundTimer'
 
 const GAIN_VISIBLE_MS = 1100
 
@@ -39,17 +40,21 @@ function ScorePill({ score }) {
   )
 }
 
-export default function GameHeader({ round, streak, score }) {
+export default function GameHeader({ round, streak, score, mode, seconds }) {
   const { t } = useI18n()
 
   return (
     <section className="game-head">
       <div>
-        <p className="eyebrow">{t.round(round + 1, TOTAL_ROUNDS)}</p>
+        <p className="eyebrow">
+          {t.round(round + 1, TOTAL_ROUNDS)}
+          <span className={`mode-tag mode-tag-${mode}`}>{t.modes[mode].tag}</span>
+        </p>
         <h1>{t.gameTitle}</h1>
         <p className="subtitle">{t.gameSubtitle}</p>
       </div>
       <div className="game-head-right">
+        <RoundTimer seconds={seconds} />
         <div className="streak-card">
           <span>{t.streak}</span>
           <strong>{streak}x</strong>

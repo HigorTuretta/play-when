@@ -9,6 +9,9 @@
   .home > .shuffle-art {
     display: none;
   }
+  .guide-columns {
+    grid-template-columns: 1fr;
+  }
   .timeline-rail {
     display: none;
   }
@@ -128,6 +131,57 @@
   }
   .card-body {
     cursor: default;
+  }
+}
+
+@media (max-width: 540px) {
+  .mode-picker {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .mode-card {
+    padding: 13px 14px;
+  }
+  .game-head-right {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .round-timer {
+    gap: 6px;
+    padding: 7px 11px 7px 9px;
+  }
+  .timer-ring {
+    width: 15px;
+    height: 15px;
+  }
+  .timer-value,
+  .score-value {
+    font-size: 15px;
+  }
+  .streak-card {
+    min-width: 0;
+    padding: 5px 10px;
+    transform: rotate(1deg);
+  }
+  .streak-card span {
+    font-size: 8.5px;
+  }
+  .streak-card strong {
+    font-size: 17px;
+  }
+  .score-pill {
+    padding: 7px 11px;
+  }
+  .play-callout {
+    padding: 16px;
+  }
+  .play-callout .primary {
+    width: 100%;
+    justify-content: center;
+  }
+  .leaderboard-body {
+    min-height: 380px;
   }
 }
 

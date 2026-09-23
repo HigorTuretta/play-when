@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import Modal from '../../components/ui/Modal'
 import { useI18n } from '../../i18n/LanguageProvider'
 import { useAuth } from './AuthProvider'
-import { NICKNAME_MAX, isValidNickname } from './profileService'
+import { NICKNAME_MAX, isValidNickname } from './nickname'
 
 export default function NicknameModal() {
   const { t } = useI18n()

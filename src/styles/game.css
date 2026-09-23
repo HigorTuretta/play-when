@@ -643,3 +643,68 @@
 .dust-puff.puff-3 {
   animation-name: dust4;
 }
+
+.mode-tag {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  vertical-align: 1px;
+}
+.mode-tag-ranked {
+  border-color: var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+/* Ranked round timer: calm at first, warmer under 10 s, urgent under 5 s. */
+.round-timer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px 10px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 #cfc6b6;
+  font-family: var(--display);
+  font-weight: 800;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+.timer-ring {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: conic-gradient(var(--ink) calc(var(--timer-share) * 360deg), transparent 0);
+  transition: background 0.25s linear;
+}
+.timer-value {
+  min-width: 5ch;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.round-timer.is-warning {
+  background: var(--yellow);
+}
+.round-timer.is-critical {
+  background: var(--red);
+  color: var(--paper);
+  animation: timerPulse 1s ease-in-out infinite;
+}
+.round-timer.is-critical .timer-ring {
+  border-color: var(--paper);
+  background: conic-gradient(var(--paper) calc(var(--timer-share) * 360deg), transparent 0);
+}
+
+/* Time is up: the cards stay where they are while the order is sent. */
+.timeline-zone.is-locked .timeline-card {
+  cursor: default;
+  filter: saturate(0.7);
+}

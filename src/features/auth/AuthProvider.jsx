@@ -1,9 +1,18 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { setTrackingEnabled, track } from '../../lib/analytics'
-import { observeAuth, signInWithGoogle, signOutUser } from './authService'
-import { createProfile, getProfile } from './profileService'
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { EVENTS, setTrackingEnabled, track } from '../../lib/analytics'
 
 const AuthContext = createContext(null)
+
+const loadAuthService = () => import('./authService')
+const loadProfileService = () => import('./profileService')
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -11,44 +20,76 @@ export function AuthProvider({ children }) {
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // Kept once loaded so sign-in can open its popup straight from the click: Safari blocks
+  // popups opened after an await.
+  const service = useRef(null)
 
-  useEffect(
-    () =>
-      observeAuth(async (nextUser) => {
-        setTrackingEnabled(Boolean(nextUser))
-        setUser(nextUser)
-        setError(null)
-        if (nextUser) {
-          try {
-            setProfile(await getProfile(nextUser.uid))
-          } catch {
-            setError('generic')
+  useEffect(() => {
+    let alive = true
+    let unsubscribe = () => {}
+
+    loadAuthService()
+      .then((module) => {
+        if (!alive) return
+        service.current = module
+        unsubscribe = module.observeAuth(async (nextUser) => {
+          setTrackingEnabled(Boolean(nextUser))
+          setUser(nextUser)
+          setError(null)
+          if (nextUser) {
+            try {
+              const { getProfile } = await loadProfileService()
+              setProfile(await getProfile(nextUser.uid))
+            } catch {
+              setError('generic')
+            }
+          } else {
+            setProfile(null)
           }
-        } else {
-          setProfile(null)
-        }
+          setReady(true)
+        })
+      })
+      .catch(() => {
+        if (!alive) return
+        setError('generic')
         setReady(true)
-      }),
-    [],
-  )
+      })
 
-  const login = useCallback(async () => {
-    try {
-      setError(null)
-      await signInWithGoogle()
-      track('login', { method: 'google' })
-    } catch {
-      setError('generic')
+    return () => {
+      alive = false
+      unsubscribe()
     }
   }, [])
 
-  const logout = useCallback(() => signOutUser(), [])
+  const login = useCallback(async () => {
+    track(EVENTS.loginStarted, { method: 'google' })
+    try {
+      setError(null)
+      const module = service.current || (await loadAuthService())
+      await module.signInWithGoogle()
+      track(EVENTS.loginCompleted, { method: 'google' })
+      return true
+    } catch (e) {
+      console.error('Sign-in failed', e)
+      // Closing the popup is a choice, not an error worth a banner.
+      if (e?.code !== 'auth/popup-closed-by-user' && e?.code !== 'auth/cancelled-popup-request') {
+        setError('generic')
+      }
+      return false
+    }
+  }, [])
+
+  const logout = useCallback(async () => {
+    const module = service.current || (await loadAuthService())
+    await module.signOutUser()
+  }, [])
 
   const saveNickname = useCallback(
     async (nickname) => {
       if (!user) return
       try {
         setBusy(true)
+        const { createProfile } = await loadProfileService()
         setProfile(await createProfile(user, nickname))
         track('sign_up', { method: 'google' })
       } catch {

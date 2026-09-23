@@ -17,6 +17,7 @@ import {
   STATIC_ROUNDS_VERSION,
   writeStaticRound,
 } from './lib/rounds.mjs'
+import { writeGameData } from './lib/gameData.mjs'
 
 const from = process.argv[2] || 'v1'
 if (from === STATIC_ROUNDS_VERSION) {
@@ -34,6 +35,9 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
   await writeStaticRound(roundId, cards, round.answer || null)
   written += 1
 }
+
+// The normal-mode catalogue and the ranked round index are derived from these files.
+await writeGameData()
 
 console.log(`Rewrote ${written} rounds from ${from} into ${path.basename(staticRoundsDir)}.`)
 console.log(

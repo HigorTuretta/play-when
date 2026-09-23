@@ -122,3 +122,52 @@
   padding: 12px 18px;
   font-size: 14px;
 }
+
+.ranked-modal {
+  width: min(460px, 100%);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 26px;
+  padding: 28px;
+  box-shadow: 10px 12px 0 rgba(0, 0, 0, 0.2);
+  animation: modalPop 0.3s cubic-bezier(0.2, 0.9, 0.2, 1.1) both;
+}
+.ranked-icon {
+  background: var(--yellow);
+}
+.ranked-modal h2 {
+  margin: 18px 0 8px;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+.ranked-modal p {
+  margin: 0 0 14px;
+  color: #6c685e;
+  line-height: 1.6;
+  font-size: 14.5px;
+}
+.ranked-perks {
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+.ranked-perks li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.ranked-perks li::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--ember);
+  transform: rotate(45deg);
+}
