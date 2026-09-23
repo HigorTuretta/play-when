@@ -17,12 +17,18 @@ export default function OnboardingModal({ step, onNext, onSkip }) {
           <span key={index} className={index <= step ? 'is-done' : ''} />
         ))}
       </div>
-      <div className={`modal-icon onboarding-icon step-${step + 1}`} aria-hidden="true">{content.icon}</div>
+      <div className={`modal-icon onboarding-icon step-${step + 1}`} aria-hidden="true">
+        {content.icon}
+      </div>
       <h2 id="onboarding-title">{content.title}</h2>
       <p>{content.copy}</p>
       <div className="onboarding-actions">
-        <button className="primary" onClick={onNext}>{last ? t.gotIt : t.next}</button>
-        <button className="ghost" onClick={onSkip}>{t.skip}</button>
+        <button className="primary" onClick={onNext}>
+          {last ? t.gotIt : t.next}
+        </button>
+        <button className="ghost" onClick={onSkip}>
+          {t.skip}
+        </button>
       </div>
     </Modal>
   )

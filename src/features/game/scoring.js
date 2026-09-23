@@ -1,16 +1,26 @@
-import { PERFECT_BONUS, POINTS_PER_CARD, ROUND_SIZE, STREAK_BONUS_STEP, STREAK_WINDOW_MS } from './constants'
+import {
+  PERFECT_BONUS,
+  POINTS_PER_CARD,
+  ROUND_SIZE,
+  STREAK_BONUS_STEP,
+  STREAK_WINDOW_MS,
+} from './constants'
 
 export const isSameDay = (a, b) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10)
 
 // Mirrored by gameScore() in firestore.rules, which recomputes ranked scores.
 function scoreHits(hits, streakBefore) {
   const perfect = hits === ROUND_SIZE
-  const score = hits * POINTS_PER_CARD + (perfect ? PERFECT_BONUS + streakBefore * STREAK_BONUS_STEP : 0)
+  const score =
+    hits * POINTS_PER_CARD + (perfect ? PERFECT_BONUS + streakBefore * STREAK_BONUS_STEP : 0)
   return { hits, perfect, score, streakAfter: perfect ? streakBefore + 1 : 0 }
 }
 
 export function scoreRound(orderedIds, correctOrder, streakBefore) {
-  const hits = orderedIds.reduce((total, id, index) => total + (correctOrder[index] === id ? 1 : 0), 0)
+  const hits = orderedIds.reduce(
+    (total, id, index) => total + (correctOrder[index] === id ? 1 : 0),
+    0,
+  )
   return scoreHits(hits, streakBefore)
 }
 

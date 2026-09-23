@@ -14,7 +14,8 @@ export const roundIdFor = (n) => `round-${String(n).padStart(4, '0')}`
 export const isGuestRound = (n) => n > RANKED_POOL_SIZE
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-export const staticRoundsDirFor = (version) => path.resolve(__dirname, '../../public/rounds', version)
+export const staticRoundsDirFor = (version) =>
+  path.resolve(__dirname, '../../public/rounds', version)
 export const staticRoundsDir = staticRoundsDirFor(STATIC_ROUNDS_VERSION)
 
 // Only display fields are published. imageQuery (often "<event> <year>"), the year itself and

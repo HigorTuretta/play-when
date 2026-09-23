@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import Modal from '../../components/ui/Modal'
 import { useI18n } from '../../i18n/LanguageProvider'
 import { useAuth } from './AuthProvider'
-import { NICKNAME_MAX, isValidNickname } from './profileService'
+import { NICKNAME_MAX, isValidNickname } from './nickname'
 
 export default function NicknameModal() {
   const { t } = useI18n()
@@ -16,7 +16,9 @@ export default function NicknameModal() {
 
   return (
     <Modal className="nickname-modal" labelledBy="nickname-title">
-      <div className="modal-icon nickname-icon" aria-hidden="true">@</div>
+      <div className="modal-icon nickname-icon" aria-hidden="true">
+        @
+      </div>
       <h2 id="nickname-title">{t.profileTitle}</h2>
       <p>{t.profileCopy}</p>
       <label>
@@ -31,7 +33,9 @@ export default function NicknameModal() {
         />
         <small>{t.nicknameHint}</small>
       </label>
-      <button className="primary block" disabled={!canSubmit} onClick={submit}>{t.saveNickname}</button>
+      <button className="primary block" disabled={!canSubmit} onClick={submit}>
+        {t.saveNickname}
+      </button>
     </Modal>
   )
 }

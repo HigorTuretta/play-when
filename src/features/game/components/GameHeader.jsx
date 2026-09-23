@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useAnimatedNumber } from '../../../hooks/useAnimatedNumber'
 import { useI18n } from '../../../i18n/LanguageProvider'
 import { TOTAL_ROUNDS } from '../constants'
+import RoundTimer from './RoundTimer'
 
 const GAIN_VISIBLE_MS = 1100
 
@@ -18,7 +19,10 @@ function ScorePill({ score }) {
 
     const id = Date.now()
     setGain({ id, value: diff })
-    const timer = setTimeout(() => setGain((current) => (current?.id === id ? null : current)), GAIN_VISIBLE_MS)
+    const timer = setTimeout(
+      () => setGain((current) => (current?.id === id ? null : current)),
+      GAIN_VISIBLE_MS,
+    )
     return () => clearTimeout(timer)
   }, [score])
 
@@ -27,23 +31,34 @@ function ScorePill({ score }) {
       <span className="score-mark" aria-hidden="true" />
       <span className="score-value">{displayed}</span>
       <span className="score-unit">{t.pointsShort}</span>
-      {gain && <span key={gain.id} className="score-float">+{gain.value}</span>}
+      {gain && (
+        <span key={gain.id} className="score-float">
+          +{gain.value}
+        </span>
+      )}
     </div>
   )
 }
 
-export default function GameHeader({ round, streak, score }) {
+export default function GameHeader({ round, streak, score, mode, seconds }) {
   const { t } = useI18n()
 
   return (
     <section className="game-head">
       <div>
-        <p className="eyebrow">{t.round(round + 1, TOTAL_ROUNDS)}</p>
+        <p className="eyebrow">
+          {t.round(round + 1, TOTAL_ROUNDS)}
+          <span className={`mode-tag mode-tag-${mode}`}>{t.modes[mode].tag}</span>
+        </p>
         <h1>{t.gameTitle}</h1>
         <p className="subtitle">{t.gameSubtitle}</p>
       </div>
       <div className="game-head-right">
-        <div className="streak-card"><span>{t.streak}</span><strong>{streak}x</strong></div>
+        <RoundTimer seconds={seconds} />
+        <div className="streak-card">
+          <span>{t.streak}</span>
+          <strong>{streak}x</strong>
+        </div>
         <ScorePill score={score} />
       </div>
     </section>

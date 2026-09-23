@@ -28,7 +28,8 @@ export const titlePtFor = (card) => titlesPt[card.id] || card.titlePt
 export function assertNoYearInTitles(card) {
   if (YEAR_ALLOWED.has(card.id)) return
   for (const title of [titlePtFor(card), titleEnFor(card)]) {
-    if (TITLE_YEAR.test(title)) throw new Error(`${card.id}: published title names a year: "${title}"`)
+    if (TITLE_YEAR.test(title))
+      throw new Error(`${card.id}: published title names a year: "${title}"`)
   }
 }
 

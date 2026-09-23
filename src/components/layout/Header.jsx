@@ -1,6 +1,6 @@
 import React from 'react'
-import { useRouter } from '../../app/router'
-import { ROUTES } from '../../config/constants'
+import { Link, useRouter } from '../../app/router'
+import { pathFor } from '../../config/routes'
 import AuthControls from '../../features/auth/AuthControls'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useGame } from '../../features/game/GameProvider'
@@ -9,30 +9,35 @@ import LanguageSwitch from './LanguageSwitch'
 import StreakChip from './StreakChip'
 
 export default function Header() {
-  const { t } = useI18n()
-  const { path, navigate } = useRouter()
+  const { t, language } = useI18n()
+  const { route, navigate } = useRouter()
   const { user, profile, logout } = useAuth()
   const { daily, closeResults } = useGame()
-
-  const goHome = () => {
-    closeResults()
-    navigate(ROUTES.home)
-  }
+  const home = pathFor('home', language)
+  const ranking = pathFor('ranking', language)
 
   const handleLogout = async () => {
     await logout()
-    navigate(ROUTES.home)
+    navigate(home)
   }
+
+  const current = (name) => (route.name === name ? 'page' : undefined)
 
   return (
     <header className="topbar">
-      <button className="brand brand-button" onClick={goHome}>
-        <span className="brand-dot">W</span>
+      <Link className="brand brand-button" to={home} onClick={closeResults}>
+        <span className="brand-dot" aria-hidden="true">
+          W
+        </span>
         <span>{t.gameName}</span>
-      </button>
-      <nav className="main-nav">
-        <button className={path === ROUTES.home ? 'active' : ''} onClick={goHome}>{t.home}</button>
-        <button className={path === ROUTES.leaderboard ? 'active' : ''} onClick={() => navigate(ROUTES.leaderboard)}>{t.leaderboard}</button>
+      </Link>
+      <nav className="main-nav" aria-label={t.nav.label}>
+        <Link to={home} onClick={closeResults} aria-current={current('home')}>
+          {t.home}
+        </Link>
+        <Link to={ranking} aria-current={current('ranking')}>
+          {t.leaderboard}
+        </Link>
       </nav>
       <div className="topbar-tools">
         {user && profile && daily.streak > 0 && <StreakChip value={daily.streak} />}

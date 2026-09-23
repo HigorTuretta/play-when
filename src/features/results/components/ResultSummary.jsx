@@ -19,7 +19,9 @@ function SummaryCard({ card, hit }) {
         aria-hidden="true"
       />
       <span className="summary-text">
-        <span className={`summary-year ${hit ? 'is-hit' : 'is-miss'}`}>{formatYear(card.year)}</span>
+        <span className={`summary-year ${hit ? 'is-hit' : 'is-miss'}`}>
+          {formatYear(card.year)}
+        </span>
         <span className="summary-title">{textForEvent(card, language).title}</span>
       </span>
     </div>
@@ -30,8 +32,10 @@ export default function ResultSummary({ results }) {
   const { t } = useI18n()
 
   return (
-    <section className="summary-panel">
-      <p className="panel-label">{t.summaryTitle}</p>
+    <section className="summary-panel" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" className="panel-label">
+        {t.summaryTitle}
+      </h2>
       <div className="summary-rows">
         {results.map((round) => {
           const chronological = [...round.ordered].sort((a, b) => a.year - b.year)
@@ -44,7 +48,9 @@ export default function ResultSummary({ results }) {
             <div key={round.round} className="summary-row">
               <span className="summary-label">{t.roundLabel(round.round + 1)}</span>
               <div className="summary-cards">
-                {chronological.map((card) => <SummaryCard key={card.id} card={card} hit={wasHit(card)} />)}
+                {chronological.map((card) => (
+                  <SummaryCard key={card.id} card={card} hit={wasHit(card)} />
+                ))}
               </div>
             </div>
           )

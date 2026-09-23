@@ -13,7 +13,9 @@ export default function RoundLoader({ progress }) {
       <ShuffleArt />
       <strong>{phrase}</strong>
       <span>{t.imagesReady(ready, ROUND_SIZE)}</span>
-      <div className="loader-progress"><i style={{ width: `${(ready / ROUND_SIZE) * 100}%` }} /></div>
+      <div className="loader-progress">
+        <i style={{ width: `${(ready / ROUND_SIZE) * 100}%` }} />
+      </div>
     </section>
   )
 }

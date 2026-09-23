@@ -1,0 +1,8 @@
+# Build output
+dist/
+dist-ssr/
+coverage/
+
+# Generated or third-party data kept byte-for-byte
+package-lock.json
+public/rounds/

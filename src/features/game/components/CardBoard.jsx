@@ -1,9 +1,21 @@
 import React, { useState } from 'react'
 import {
-  DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, TouchSensor, closestCenter,
-  defaultDropAnimationSideEffects, useSensor, useSensors,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  defaultDropAnimationSideEffects,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core'
-import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
 import { useI18n } from '../../../i18n/LanguageProvider'
 import { useDustBurst } from '../hooks/useDustBurst'
 import CardContent from './CardContent'
@@ -19,11 +31,10 @@ const DROP_ANIMATION = {
   sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.15' } } }),
 }
 
-export default function CardBoard({ cards, reveal, onMove, onReorder }) {
+export default function CardBoard({ cards, reveal, locked, onMove, onReorder }) {
   const { t } = useI18n()
   const [dragging, setDragging] = useState(null)
   const { burst, trigger } = useDustBurst()
-  const locked = Boolean(reveal)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -60,11 +71,22 @@ export default function CardBoard({ cards, reveal, onMove, onReorder }) {
       onDragCancel={() => setDragging(null)}
       onDragEnd={handleDragEnd}
     >
-      <section className={`timeline-zone ${dragging ? 'is-sorting' : ''}`} aria-label={t.cardsAria}>
+      <section
+        className={`timeline-zone ${dragging ? 'is-sorting' : ''} ${locked && !reveal ? 'is-locked' : ''}`}
+        aria-label={t.cardsAria}
+      >
         <SortableContext items={cards.map((card) => card.id)} strategy={rectSortingStrategy}>
           <div className="cards-grid">
             {cards.map((card, index) => (
-              <SortableCard key={card.id} card={card} index={index} count={cards.length} reveal={reveal} onMove={handleMove} />
+              <SortableCard
+                key={card.id}
+                card={card}
+                index={index}
+                count={cards.length}
+                reveal={reveal}
+                locked={locked}
+                onMove={handleMove}
+              />
             ))}
           </div>
         </SortableContext>

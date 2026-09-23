@@ -8,9 +8,16 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import {
-  ROUND_COUNT, publicCard, resetStaticRoundsDir, roundIdFor, staticRoundsDir, staticRoundsDirFor,
-  STATIC_ROUNDS_VERSION, writeStaticRound,
+  ROUND_COUNT,
+  publicCard,
+  resetStaticRoundsDir,
+  roundIdFor,
+  staticRoundsDir,
+  staticRoundsDirFor,
+  STATIC_ROUNDS_VERSION,
+  writeStaticRound,
 } from './lib/rounds.mjs'
+import { writeGameData } from './lib/gameData.mjs'
 
 const from = process.argv[2] || 'v1'
 if (from === STATIC_ROUNDS_VERSION) {
@@ -29,5 +36,10 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
   written += 1
 }
 
+// The normal-mode catalogue and the ranked round index are derived from these files.
+await writeGameData()
+
 console.log(`Rewrote ${written} rounds from ${from} into ${path.basename(staticRoundsDir)}.`)
-console.log(`Delete public/rounds/${from} once the new folder looks right: publishing both doubles the deploy.`)
+console.log(
+  `Delete public/rounds/${from} once the new folder looks right: publishing both doubles the deploy.`,
+)

@@ -1,13 +1,95 @@
 {
   "indexes": [],
   "fieldOverrides": [
-    { "collectionGroup": "attempts", "fieldPath": "orderedIds", "ttl": false, "indexes": [] },
-    { "collectionGroup": "attempts", "fieldPath": "createdAt", "ttl": false, "indexes": [] },
-    { "collectionGroup": "games", "fieldPath": "roundIds", "ttl": false, "indexes": [] },
-    { "collectionGroup": "games", "fieldPath": "hits", "ttl": false, "indexes": [] },
-    { "collectionGroup": "games", "fieldPath": "createdAt", "ttl": false, "indexes": [] },
-    { "collectionGroup": "games", "fieldPath": "completedAt", "ttl": false, "indexes": [] },
-    { "collectionGroup": "scoreCredits", "fieldPath": "createdAt", "ttl": false, "indexes": [] },
-    { "collectionGroup": "leaderboard", "fieldPath": "updatedAt", "ttl": false, "indexes": [] }
+    {
+      "collectionGroup": "attempts",
+      "fieldPath": "orderedIds",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "attempts",
+      "fieldPath": "createdAt",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "roundIds",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "hits",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "createdAt",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "completedAt",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "scoreCredits",
+      "fieldPath": "createdAt",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "leaderboard",
+      "fieldPath": "updatedAt",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "roundStarts",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "attempts",
+      "fieldPath": "timedOut",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "state",
+      "fieldPath": "events",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "state",
+      "fieldPath": "usedRounds",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "rankedLeaderboard",
+      "fieldPath": "updatedAt",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "rankedLeaderboard",
+      "fieldPath": "lastGameId",
+      "ttl": false,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "leaderboard",
+      "fieldPath": "lastGameId",
+      "ttl": false,
+      "indexes": []
+    }
   ]
 }

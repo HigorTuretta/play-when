@@ -6,15 +6,21 @@
   "scripts": {
     "dev": "vite",
     "dev:emulators": "vite --mode emulator",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "vite build && vite build --ssr src/entry-server.jsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "preview": "node scripts/serve-dist.mjs",
     "seed:firestore": "node scripts/seed-firestore.mjs",
     "validate:facts": "node scripts/validate-facts.mjs",
     "validate:rounds": "node scripts/validate-rounds.mjs",
     "export:rounds": "node scripts/export-static-rounds.mjs",
     "retext:rounds": "node scripts/retext-rounds.mjs",
     "test:rules": "npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-play-when \"node --test tests/firestore.rules.test.mjs\"",
-    "emulators": "npx --yes firebase-tools@14 emulators:start --only auth,firestore --project demo-play-when"
+    "emulators": "npx --yes firebase-tools@14 emulators:start --only auth,firestore --project demo-play-when",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build:game-data": "node scripts/build-game-data.mjs",
+    "test": "vitest run",
+    "seed:emulator": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node scripts/seed-emulator.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -26,8 +32,15 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@firebase/rules-unit-testing": "^5.0.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "firebase-admin": "^13.5.0",
-    "vite": "^6.0.5"
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
   }
 }

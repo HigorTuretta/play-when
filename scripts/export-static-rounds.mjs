@@ -5,11 +5,19 @@ import process from 'node:process'
 import { applicationDefault, initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import {
-  ROUND_COUNT, isGuestRound, publicCard, resetStaticRoundsDir, roundIdFor, staticRoundsDir, writeStaticRound,
+  ROUND_COUNT,
+  isGuestRound,
+  publicCard,
+  resetStaticRoundsDir,
+  roundIdFor,
+  staticRoundsDir,
+  writeStaticRound,
 } from './lib/rounds.mjs'
 import { resolveImages } from './lib/wikipedia.mjs'
+import { writeGameData } from './lib/gameData.mjs'
 
-const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'tempo-certo-6ccc2'
+const PROJECT_ID =
+  process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'tempo-certo-6ccc2'
 
 initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID })
 const db = getFirestore()
@@ -22,8 +30,13 @@ const [roundSnaps, answerSnaps] = await Promise.all([
   db.getAll(...guestNumbers.map((n) => db.doc(`roundAnswers/${roundIdFor(n)}`))),
 ])
 
-const missing = [...roundSnaps, ...answerSnaps].filter((snap) => !snap.exists).map((snap) => snap.ref.path)
-if (missing.length) throw new Error(`Missing documents: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}`)
+const missing = [...roundSnaps, ...answerSnaps]
+  .filter((snap) => !snap.exists)
+  .map((snap) => snap.ref.path)
+if (missing.length)
+  throw new Error(
+    `Missing documents: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}`,
+  )
 
 const answers = new Map(answerSnaps.map((snap) => [snap.id, snap.data()]))
 const images = await resolveImages(roundSnaps.flatMap((snap) => snap.data().cards))
@@ -34,6 +47,11 @@ for (const snap of roundSnaps) {
   await writeStaticRound(snap.id, cards, answers.get(snap.id))
 }
 
+// The normal-mode catalogue and the ranked round index are derived from these files.
+await writeGameData()
+
 const withoutImage = [...images.values()].filter((image) => !image).length
-console.log(`Exported ${roundSnaps.length} rounds (${answers.size} with guest answers) to ${staticRoundsDir}`)
+console.log(
+  `Exported ${roundSnaps.length} rounds (${answers.size} with guest answers) to ${staticRoundsDir}`,
+)
 console.log(`Images: ${images.size - withoutImage}/${images.size} facts resolved on Wikipedia.`)

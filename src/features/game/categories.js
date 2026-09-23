@@ -1,4 +1,17 @@
-import { Camera, Clapperboard, Cpu, FlaskConical, Gamepad2, Globe2, Landmark, Music2, Rocket, TrainFront, Trophy, Wifi } from 'lucide-react'
+import {
+  Camera,
+  Clapperboard,
+  Cpu,
+  FlaskConical,
+  Gamepad2,
+  Globe2,
+  Landmark,
+  Music2,
+  Rocket,
+  TrainFront,
+  Trophy,
+  Wifi,
+} from 'lucide-react'
 
 const DEFAULT_ACCENT = '#201f1c'
 

@@ -5,9 +5,16 @@ import { fileURLToPath } from 'node:url'
 import { applicationDefault, initializeApp } from 'firebase-admin/app'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import {
-  ROUND_COUNT, isGuestRound, publicCard, resetStaticRoundsDir, roundIdFor, staticRoundsDir, writeStaticRound,
+  ROUND_COUNT,
+  isGuestRound,
+  publicCard,
+  resetStaticRoundsDir,
+  roundIdFor,
+  staticRoundsDir,
+  writeStaticRound,
 } from './lib/rounds.mjs'
 import { resolveImages } from './lib/wikipedia.mjs'
+import { writeGameData } from './lib/gameData.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const factsPath = path.resolve(__dirname, '../private-data/facts.json')
@@ -16,10 +23,10 @@ const SEED = 0x54494d45
 
 function mulberry32(seed) {
   return function rand() {
-    let t = seed += 0x6D2B79F5
-    t = Math.imul(t ^ t >>> 15, t | 1)
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61)
-    return ((t ^ t >>> 14) >>> 0) / 4294967296
+    let t = (seed += 0x6d2b79f5)
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
 
@@ -55,18 +62,18 @@ function makeRound(facts, rand) {
 
 const facts = JSON.parse(await fs.readFile(factsPath, 'utf8'))
 if (facts.length !== 500) throw new Error(`Expected exactly 500 facts, found ${facts.length}.`)
-if (new Set(facts.map((item) => item.id)).size !== facts.length) throw new Error('Duplicate fact ids found.')
+if (new Set(facts.map((item) => item.id)).size !== facts.length)
+  throw new Error('Duplicate fact ids found.')
 const categoryCount = new Set(facts.map((item) => item.category)).size
-if (categoryCount < ROUND_SIZE) throw new Error(`A round needs ${ROUND_SIZE} categories, the pool has ${categoryCount}.`)
+if (categoryCount < ROUND_SIZE)
+  throw new Error(`A round needs ${ROUND_SIZE} categories, the pool has ${categoryCount}.`)
 
 const PROJECT_ID =
-  process.env.FIREBASE_PROJECT_ID ||
-  process.env.VITE_FIREBASE_PROJECT_ID ||
-  'tempo-certo-6ccc2'
+  process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'tempo-certo-6ccc2'
 
 initializeApp({
   credential: applicationDefault(),
-  projectId: PROJECT_ID
+  projectId: PROJECT_ID,
 })
 const db = getFirestore()
 const writer = db.bulkWriter()
@@ -78,8 +85,17 @@ writer.onWriteError((error) => {
 
 for (const fact of facts) {
   const { year, sourceUrl, datePrecision, ...publicFact } = fact
-  writer.set(db.doc(`facts/${fact.id}`), { ...publicFact, active: true, updatedAt: FieldValue.serverTimestamp() })
-  writer.set(db.doc(`factAnswers/${fact.id}`), { year, sourceUrl, datePrecision, updatedAt: FieldValue.serverTimestamp() })
+  writer.set(db.doc(`facts/${fact.id}`), {
+    ...publicFact,
+    active: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  })
+  writer.set(db.doc(`factAnswers/${fact.id}`), {
+    year,
+    sourceUrl,
+    datePrecision,
+    updatedAt: FieldValue.serverTimestamp(),
+  })
 }
 
 // The client reads rounds from public/rounds/<version>/, not from Firestore. If a reseed
@@ -91,7 +107,9 @@ const rand = mulberry32(SEED)
 for (let index = 1; index <= ROUND_COUNT; index += 1) {
   const selected = makeRound(facts, rand)
   const roundId = roundIdFor(index)
-  const publicCards = shuffled(selected, rand).map(({ year, sourceUrl, datePrecision, ...card }) => card)
+  const publicCards = shuffled(selected, rand).map(
+    ({ year, sourceUrl, datePrecision, ...card }) => card,
+  )
   const correct = [...selected].sort((a, b) => a.year - b.year)
   const answer = {
     correctOrder: correct.map((item) => item.id),
@@ -105,7 +123,10 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
     updatedAt: FieldValue.serverTimestamp(),
   })
 
-  writer.set(db.doc(`roundAnswers/${roundId}`), { ...answer, updatedAt: FieldValue.serverTimestamp() })
+  writer.set(db.doc(`roundAnswers/${roundId}`), {
+    ...answer,
+    updatedAt: FieldValue.serverTimestamp(),
+  })
 
   await writeStaticRound(
     roundId,
@@ -114,7 +135,12 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
   )
 }
 
+// The normal-mode catalogue and the ranked round index are derived from these files.
+await writeGameData()
+
 await writer.close()
 console.log(`Seed concluído: ${facts.length} fatos + ${ROUND_COUNT} rodadas públicas/privadas.`)
 console.log(`Rodadas estáticas em ${staticRoundsDir}; respostas do pool convidado incluídas.`)
-console.log('As respostas das rodadas ranqueadas ficam apenas em roundAnswers/, bloqueadas pelas Security Rules.')
+console.log(
+  'As respostas das rodadas ranqueadas ficam apenas em roundAnswers/, bloqueadas pelas Security Rules.',
+)

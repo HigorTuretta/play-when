@@ -1,20 +1,27 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { getInitialLanguage, languages, saveLanguage, translations } from './index'
+import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react'
+import { useRouter } from '../app/router'
+import { alternatePath } from '../seo/alternates'
+import { languages, saveLanguage, translations } from './index'
 
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState(getInitialLanguage)
+  const { route, navigate } = useRouter()
+  const language = route.language
 
   useEffect(() => {
     document.documentElement.lang = language
   }, [language])
 
-  const setLanguage = useCallback((next) => {
-    if (!languages[next]) return
-    setLanguageState(next)
-    saveLanguage(next)
-  }, [])
+  // Switching language opens the same page in the other language.
+  const setLanguage = useCallback(
+    (next) => {
+      if (!languages[next] || next === language) return
+      saveLanguage(next)
+      navigate(alternatePath(route, next), { replace: false })
+    },
+    [language, route, navigate],
+  )
 
   const value = useMemo(() => {
     const t = translations[language]

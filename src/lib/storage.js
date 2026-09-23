@@ -1,13 +1,21 @@
 export function readString(key) {
-  try { return localStorage.getItem(key) } catch { return null }
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
 }
 
 export function writeString(key, value) {
-  try { localStorage.setItem(key, value) } catch {}
+  try {
+    localStorage.setItem(key, value)
+  } catch {}
 }
 
 export function removeItem(key) {
-  try { localStorage.removeItem(key) } catch {}
+  try {
+    localStorage.removeItem(key)
+  } catch {}
 }
 
 export function readJSON(key, fallback = null) {
