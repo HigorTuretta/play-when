@@ -3,7 +3,8 @@ import { ROUTES } from '../config/constants'
 import { track } from '../lib/analytics'
 
 const knownPaths = new Set(Object.values(ROUTES))
-const currentPath = () => (knownPaths.has(window.location.pathname) ? window.location.pathname : ROUTES.home)
+const currentPath = () =>
+  knownPaths.has(window.location.pathname) ? window.location.pathname : ROUTES.home
 
 const RouterContext = createContext(null)
 

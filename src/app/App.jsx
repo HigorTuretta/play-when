@@ -22,7 +22,11 @@ export default function App() {
   const onboarding = useOnboarding()
 
   if (!ready) {
-    return <main className="app-shell center-shell"><RoundLoader progress={2} /></main>
+    return (
+      <main className="app-shell center-shell">
+        <RoundLoader progress={2} />
+      </main>
+    )
   }
 
   const startGame = async () => {
@@ -43,7 +47,11 @@ export default function App() {
       {page}
       <SiteFooter />
       <NicknameModal />
-      <OnboardingModal step={onboarding.step} onNext={onboarding.next} onSkip={onboarding.dismiss} />
+      <OnboardingModal
+        step={onboarding.step}
+        onNext={onboarding.next}
+        onSkip={onboarding.dismiss}
+      />
     </main>
   )
 }

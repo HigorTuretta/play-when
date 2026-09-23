@@ -3,10 +3,26 @@
 import { after, before, beforeEach, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
-import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import {
-  Timestamp, collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, serverTimestamp,
-  setDoc, updateDoc, writeBatch,
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+} from '@firebase/rules-unit-testing'
+import {
+  Timestamp,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  increment,
+  limit,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
 } from 'firebase/firestore'
 
 const roundIdFor = (n) => `round-${String(n).padStart(4, '0')}`
@@ -17,8 +33,10 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 let env
 
-const google = (uid) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore()
-const password = (uid) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'password' } }).firestore()
+const google = (uid) =>
+  env.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore()
+const password = (uid) =>
+  env.authenticatedContext(uid, { firebase: { sign_in_provider: 'password' } }).firestore()
 const anonymous = () => env.unauthenticatedContext().firestore()
 
 async function seed(write) {
@@ -27,25 +45,55 @@ async function seed(write) {
 
 function createProfile(db, uid, nickname = 'Turetta', countryCode = 'BR') {
   const batch = writeBatch(db)
-  batch.set(doc(db, 'profiles', uid), { nickname, countryCode, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
-  batch.set(doc(db, 'leaderboard', uid), { nickname, countryCode, totalScore: 0, gamesPlayed: 0, updatedAt: serverTimestamp() })
+  batch.set(doc(db, 'profiles', uid), {
+    nickname,
+    countryCode,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+  batch.set(doc(db, 'leaderboard', uid), {
+    nickname,
+    countryCode,
+    totalScore: 0,
+    gamesPlayed: 0,
+    updatedAt: serverTimestamp(),
+  })
   return batch.commit()
 }
 
 function startGame(db, uid, gameId, roundIds, plays = 1) {
   const batch = writeBatch(db)
   batch.set(doc(db, 'users', uid, 'games', gameId), {
-    uid, roundIds, score: 0, completed: false, createdAt: serverTimestamp(), completedAt: null,
+    uid,
+    roundIds,
+    score: 0,
+    completed: false,
+    createdAt: serverTimestamp(),
+    completedAt: null,
   })
-  batch.set(doc(db, 'users', uid, 'state', 'daily'), {
-    day: serverTimestamp(), plays, currentGameId: gameId, roundCursor: 6 * plays, updatedAt: serverTimestamp(),
-  }, { merge: true })
+  batch.set(
+    doc(db, 'users', uid, 'state', 'daily'),
+    {
+      day: serverTimestamp(),
+      plays,
+      currentGameId: gameId,
+      roundCursor: 6 * plays,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
   return batch.commit()
 }
 
-const submit = (db, uid, gameId, roundId, roundIndex, orderedIds) => setDoc(doc(db, 'attempts', `${uid}_${roundId}`), {
-  uid, gameId, roundId, roundIndex, orderedIds, createdAt: serverTimestamp(),
-})
+const submit = (db, uid, gameId, roundId, roundIndex, orderedIds) =>
+  setDoc(doc(db, 'attempts', `${uid}_${roundId}`), {
+    uid,
+    gameId,
+    roundId,
+    roundIndex,
+    orderedIds,
+    createdAt: serverTimestamp(),
+  })
 
 // Mirrors scoreRound() in src/features/game/scoring.js.
 function scoreFor(hits) {
@@ -63,25 +111,46 @@ const ZERO_GAME = { score: 0, hits: [0, 0, 0, 0, 0, 0] }
 
 function finish(db, uid, gameId, { score, hits }) {
   const batch = writeBatch(db)
-  batch.update(doc(db, 'users', uid, 'games', gameId), { score, hits, completed: true, completedAt: serverTimestamp() })
-  batch.set(doc(db, 'scoreCredits', `${uid}_${gameId}`), { uid, gameId, score, createdAt: serverTimestamp() })
+  batch.update(doc(db, 'users', uid, 'games', gameId), {
+    score,
+    hits,
+    completed: true,
+    completedAt: serverTimestamp(),
+  })
+  batch.set(doc(db, 'scoreCredits', `${uid}_${gameId}`), {
+    uid,
+    gameId,
+    score,
+    createdAt: serverTimestamp(),
+  })
   batch.update(doc(db, 'leaderboard', uid), {
-    totalScore: increment(score), gamesPlayed: increment(1), lastGameId: gameId, updatedAt: serverTimestamp(),
+    totalScore: increment(score),
+    gamesPlayed: increment(1),
+    lastGameId: gameId,
+    updatedAt: serverTimestamp(),
   })
   return batch.commit()
 }
 
-const creditStreak = (db, uid, streak) => updateDoc(doc(db, 'users', uid, 'state', 'daily'), {
-  streak, lastPlayedAt: serverTimestamp(), updatedAt: serverTimestamp(),
-})
+const creditStreak = (db, uid, streak) =>
+  updateDoc(doc(db, 'users', uid, 'state', 'daily'), {
+    streak,
+    lastPlayedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
 
 const perfect = (roundId) => answerFor(roundId)
-const swapped = (roundId) => { const [a, b, c, d] = answerFor(roundId); return [b, a, c, d] }
+const swapped = (roundId) => {
+  const [a, b, c, d] = answerFor(roundId)
+  return [b, a, c, d]
+}
 const reversed = (roundId) => [...answerFor(roundId)].reverse()
 
 async function playGame(db, uid, gameId, roundIds, orders, from = 0) {
   for (let index = from; index < orders.length + from; index += 1) {
-    await assertSucceeds(submit(db, uid, gameId, roundIds[index], index, orders[index - from](roundIds[index])))
+    await assertSucceeds(
+      submit(db, uid, gameId, roundIds[index], index, orders[index - from](roundIds[index])),
+    )
   }
 }
 
@@ -96,7 +165,10 @@ beforeEach(async () => {
   await env.clearFirestore()
   await seed(async (db) => {
     for (const roundId of [...RANKED, ...GUEST]) {
-      await setDoc(doc(db, 'roundAnswers', roundId), { correctOrder: answerFor(roundId), years: {} })
+      await setDoc(doc(db, 'roundAnswers', roundId), {
+        correctOrder: answerFor(roundId),
+        years: {},
+      })
       await setDoc(doc(db, 'rounds', roundId), { cards: [] })
     }
     await setDoc(doc(db, 'config', 'game'), { dailyLimit: 3 })
@@ -121,7 +193,11 @@ describe('answers and server-only data', () => {
   })
 
   test('rounds, config and retired collections are not readable', async () => {
-    for (const path of [['rounds', RANKED[0]], ['config', 'game'], ['roundCredits', `alice_${RANKED[0]}`]]) {
+    for (const path of [
+      ['rounds', RANKED[0]],
+      ['config', 'game'],
+      ['roundCredits', `alice_${RANKED[0]}`],
+    ]) {
       await assertFails(getDoc(doc(anonymous(), ...path)))
       await assertFails(getDoc(doc(google('alice'), ...path)))
     }
@@ -135,7 +211,18 @@ describe('profiles', () => {
     })
   }
 
-  for (const nickname of ['a', 'x'.repeat(25), ' ab', 'ab ', 'a  b', 'a​b', '‮abc', '<b>hi</b>', 'hi😀', 'a\nb']) {
+  for (const nickname of [
+    'a',
+    'x'.repeat(25),
+    ' ab',
+    'ab ',
+    'a  b',
+    'a​b',
+    '‮abc',
+    '<b>hi</b>',
+    'hi😀',
+    'a\nb',
+  ]) {
     test(`rejects nickname ${JSON.stringify(nickname)}`, async () => {
       await assertFails(createProfile(google('alice'), 'alice', nickname))
     })
@@ -178,7 +265,14 @@ describe('ranked games', () => {
     const db = google('alice')
     await createProfile(db, 'alice')
     await startGame(db, 'alice', 'g1', rounds)
-    await playGame(db, 'alice', 'g1', rounds, [perfect, perfect, swapped, perfect, reversed, perfect])
+    await playGame(db, 'alice', 'g1', rounds, [
+      perfect,
+      perfect,
+      swapped,
+      perfect,
+      reversed,
+      perfect,
+    ])
     // 150 + (100 + 50 + 20) + 50 + 150 + 0 + 150
     const hits = [4, 4, 2, 4, 0, 4]
     assert.equal(scoreFor(hits), 670)
@@ -261,16 +355,35 @@ describe('ranked games', () => {
     const db = google('alice')
     await createProfile(db, 'alice')
     await startGame(db, 'alice', 'g1', rounds)
-    await playGame(db, 'alice', 'g1', rounds, [perfect, perfect, perfect, reversed, reversed, reversed])
+    await playGame(db, 'alice', 'g1', rounds, [
+      perfect,
+      perfect,
+      perfect,
+      reversed,
+      reversed,
+      reversed,
+    ])
     // Only rounds 1-3 are checked by the game update itself, so it can be forced alone...
-    await assertSucceeds(updateDoc(doc(db, 'users', 'alice', 'games', 'g1'), {
-      ...PERFECT_GAME, completed: true, completedAt: serverTimestamp(),
-    }))
+    await assertSucceeds(
+      updateDoc(doc(db, 'users', 'alice', 'games', 'g1'), {
+        ...PERFECT_GAME,
+        completed: true,
+        completedAt: serverTimestamp(),
+      }),
+    )
     // ...but the credit re-checks rounds 4-6, and the leaderboard only takes credited points.
     const batch = writeBatch(db)
-    batch.set(doc(db, 'scoreCredits', 'alice_g1'), { uid: 'alice', gameId: 'g1', score: 1200, createdAt: serverTimestamp() })
+    batch.set(doc(db, 'scoreCredits', 'alice_g1'), {
+      uid: 'alice',
+      gameId: 'g1',
+      score: 1200,
+      createdAt: serverTimestamp(),
+    })
     batch.update(doc(db, 'leaderboard', 'alice'), {
-      totalScore: increment(1200), gamesPlayed: increment(1), lastGameId: 'g1', updatedAt: serverTimestamp(),
+      totalScore: increment(1200),
+      gamesPlayed: increment(1),
+      lastGameId: 'g1',
+      updatedAt: serverTimestamp(),
     })
     await assertFails(batch.commit())
   })
@@ -297,9 +410,16 @@ describe('daily limit and streak', () => {
 
   test('a new day keeps the stored streak when starting a game', async () => {
     const yesterday = Timestamp.fromMillis(Date.now() - DAY_MS)
-    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
-      day: yesterday, plays: 3, currentGameId: 'old', updatedAt: yesterday, streak: 4, lastPlayedAt: yesterday,
-    }))
+    await seed((db) =>
+      setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+        day: yesterday,
+        plays: 3,
+        currentGameId: 'old',
+        updatedAt: yesterday,
+        streak: 4,
+        lastPlayedAt: yesterday,
+      }),
+    )
     const db = google('alice')
     await assertSucceeds(startGame(db, 'alice', 'g1', RANKED.slice(0, 6), 1))
     const daily = await getDoc(doc(db, 'users', 'alice', 'state', 'daily'))
@@ -324,10 +444,20 @@ describe('daily limit and streak', () => {
     const yesterday = Timestamp.fromMillis(Date.now() - DAY_MS)
     await seed(async (db) => {
       await setDoc(doc(db, 'users', 'alice', 'games', 'g0'), {
-        uid: 'alice', roundIds: RANKED.slice(0, 6), score: 0, completed: true, createdAt: yesterday, completedAt: yesterday,
+        uid: 'alice',
+        roundIds: RANKED.slice(0, 6),
+        score: 0,
+        completed: true,
+        createdAt: yesterday,
+        completedAt: yesterday,
       })
       await setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
-        day: yesterday, plays: 1, currentGameId: 'g0', updatedAt: yesterday, streak: 2, lastPlayedAt: yesterday,
+        day: yesterday,
+        plays: 1,
+        currentGameId: 'g0',
+        updatedAt: yesterday,
+        streak: 2,
+        lastPlayedAt: yesterday,
       })
     })
     const db = google('alice')
@@ -345,7 +475,8 @@ describe('daily limit and streak', () => {
 
 describe('leaderboard', () => {
   test('lists at most ten entries', async () => {
-    const ranking = (size) => query(collection(anonymous(), 'leaderboard'), orderBy('totalScore', 'desc'), limit(size))
+    const ranking = (size) =>
+      query(collection(anonymous(), 'leaderboard'), orderBy('totalScore', 'desc'), limit(size))
     await assertSucceeds(getDocs(ranking(10)))
     await assertFails(getDocs(ranking(11)))
     await assertFails(getDocs(collection(anonymous(), 'leaderboard')))
@@ -354,12 +485,22 @@ describe('leaderboard', () => {
   test('scores can only be added through a finished game', async () => {
     const db = google('alice')
     await createProfile(db, 'alice')
-    await assertFails(updateDoc(doc(db, 'leaderboard', 'alice'), {
-      totalScore: 5000, gamesPlayed: increment(1), lastGameId: 'fake', updatedAt: serverTimestamp(),
-    }))
-    await assertFails(setDoc(doc(db, 'scoreCredits', 'alice_fake'), {
-      uid: 'alice', gameId: 'fake', score: 5000, createdAt: serverTimestamp(),
-    }))
+    await assertFails(
+      updateDoc(doc(db, 'leaderboard', 'alice'), {
+        totalScore: 5000,
+        gamesPlayed: increment(1),
+        lastGameId: 'fake',
+        updatedAt: serverTimestamp(),
+      }),
+    )
+    await assertFails(
+      setDoc(doc(db, 'scoreCredits', 'alice_fake'), {
+        uid: 'alice',
+        gameId: 'fake',
+        score: 5000,
+        createdAt: serverTimestamp(),
+      }),
+    )
   })
 })
 
@@ -372,39 +513,64 @@ describe('legacy state documents', () => {
 
   // Mirrors startGame() in src/features/game/api/gameService.js, which commits the game
   // and the daily document in a transaction rather than the batch used above.
-  const startGameAsClient = (db, uid, gameId, roundIds, plays = 1) => runTransaction(db, async (tx) => {
-    await tx.get(doc(db, 'users', uid, 'state', 'daily'))
-    tx.set(doc(db, 'users', uid, 'games', gameId), {
-      uid, roundIds, score: 0, completed: false, createdAt: serverTimestamp(), completedAt: null,
+  const startGameAsClient = (db, uid, gameId, roundIds, plays = 1) =>
+    runTransaction(db, async (tx) => {
+      await tx.get(doc(db, 'users', uid, 'state', 'daily'))
+      tx.set(doc(db, 'users', uid, 'games', gameId), {
+        uid,
+        roundIds,
+        score: 0,
+        completed: false,
+        createdAt: serverTimestamp(),
+        completedAt: null,
+      })
+      tx.set(
+        doc(db, 'users', uid, 'state', 'daily'),
+        {
+          day: serverTimestamp(),
+          plays,
+          currentGameId: gameId,
+          roundCursor: 6 * plays,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      )
     })
-    tx.set(doc(db, 'users', uid, 'state', 'daily'), {
-      day: serverTimestamp(), plays, currentGameId: gameId, roundCursor: 6 * plays, updatedAt: serverTimestamp(),
-    }, { merge: true })
-  })
 
   test('the client transaction starts a game just like the batch above', async () => {
     await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
   })
 
   test('a daily document without day or plays still allows the first game of the day', async () => {
-    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), { streak: 3, lastPlayedAt: yesterday() }))
+    await seed((db) =>
+      setDoc(doc(db, 'users', 'alice', 'state', 'daily'), { streak: 3, lastPlayedAt: yesterday() }),
+    )
     await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
     const daily = await getDoc(doc(google('alice'), 'users', 'alice', 'state', 'daily'))
     assert.equal(daily.data().streak, 3)
   })
 
   test('a daily document from today without plays counts the new game as the first', async () => {
-    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
-      day: serverTimestamp(), currentGameId: 'old', updatedAt: serverTimestamp(),
-    }))
+    await seed((db) =>
+      setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+        day: serverTimestamp(),
+        currentGameId: 'old',
+        updatedAt: serverTimestamp(),
+      }),
+    )
     await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
     await assertFails(startGameAsClient(google('alice'), 'alice', 'g2', RANKED.slice(6, 12), 3))
   })
 
   test('a daily document with a plays count that is not a number cannot inflate the limit', async () => {
-    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
-      day: serverTimestamp(), plays: 'many', currentGameId: 'old', updatedAt: serverTimestamp(),
-    }))
+    await seed((db) =>
+      setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+        day: serverTimestamp(),
+        plays: 'many',
+        currentGameId: 'old',
+        updatedAt: serverTimestamp(),
+      }),
+    )
     await assertFails(startGameAsClient(google('alice'), 'alice', 'g1', rounds, 2))
     await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds, 1))
   })
@@ -418,17 +584,26 @@ describe('legacy state documents', () => {
   })
 
   test('a daily document without currentGameId refuses the streak, not the next game', async () => {
-    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
-      day: yesterday(), plays: 1, updatedAt: yesterday(),
-    }))
+    await seed((db) =>
+      setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+        day: yesterday(),
+        plays: 1,
+        updatedAt: yesterday(),
+      }),
+    )
     await assertFails(creditStreak(google('alice'), 'alice', 1))
     await assertSucceeds(startGameAsClient(google('alice'), 'alice', 'g1', rounds))
   })
 
   test('a daily document pointing at a game that no longer exists refuses the streak', async () => {
-    await seed((db) => setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
-      day: serverTimestamp(), plays: 1, currentGameId: 'gone', updatedAt: serverTimestamp(),
-    }))
+    await seed((db) =>
+      setDoc(doc(db, 'users', 'alice', 'state', 'daily'), {
+        day: serverTimestamp(),
+        plays: 1,
+        currentGameId: 'gone',
+        updatedAt: serverTimestamp(),
+      }),
+    )
     await assertFails(creditStreak(google('alice'), 'alice', 1))
   })
 

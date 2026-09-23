@@ -12,7 +12,9 @@ const NICKNAME_PATTERN = /^[\p{L}\p{N}_.-]+( [\p{L}\p{N}_.-]+)*$/u
 export const normalizeNickname = (nickname) => nickname.normalize('NFC').trim().replace(/\s+/g, ' ')
 export const isValidNickname = (nickname) => {
   const clean = normalizeNickname(nickname)
-  return clean.length >= NICKNAME_MIN && clean.length <= NICKNAME_MAX && NICKNAME_PATTERN.test(clean)
+  return (
+    clean.length >= NICKNAME_MIN && clean.length <= NICKNAME_MAX && NICKNAME_PATTERN.test(clean)
+  )
 }
 
 export async function getProfile(uid) {

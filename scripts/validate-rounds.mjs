@@ -5,7 +5,13 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { ROUND_COUNT, isGuestRound, roundIdFor, staticRoundsDir, staticRoundsDirFor } from './lib/rounds.mjs'
+import {
+  ROUND_COUNT,
+  isGuestRound,
+  roundIdFor,
+  staticRoundsDir,
+  staticRoundsDirFor,
+} from './lib/rounds.mjs'
 
 const ROUND_SIZE = 4
 const TITLE_YEAR = /\b(?:1[0-9]{3}|20[0-9]{2})\b/
@@ -47,7 +53,10 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
     const unexpected = Object.keys(card).filter((field) => !CARD_FIELDS.includes(field))
     if (unexpected.length) report(roundId, `${card.id} publishes ${unexpected.join(', ')}`)
     if (!card.titlePt || !card.titleEn) report(roundId, `${card.id} is missing a title`)
-    if (!YEAR_ALLOWED.has(card.id) && (TITLE_YEAR.test(card.titlePt) || TITLE_YEAR.test(card.titleEn))) {
+    if (
+      !YEAR_ALLOWED.has(card.id) &&
+      (TITLE_YEAR.test(card.titlePt) || TITLE_YEAR.test(card.titleEn))
+    ) {
       report(roundId, `${card.id} gives the year away in its title`)
     }
   }
@@ -74,7 +83,12 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
 
 console.log(`Checked ${ROUND_COUNT} rounds in ${path.basename(dir)}.`)
 console.log(`Categories per round: ${repeatedCategory} of ${ROUND_COUNT} rounds repeat one.`)
-console.log([...categoryUse.entries()].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(' · '))
+console.log(
+  [...categoryUse.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([c, n]) => `${c} ${n}`)
+    .join(' · '),
+)
 
 if (errors.length) {
   console.error(`\n${errors.length} problem(s):`)
@@ -83,7 +97,9 @@ if (errors.length) {
   process.exit(1)
 }
 if (repeatedCategory) {
-  console.error('\nSome rounds repeat a category. Reseed with `npm run seed:firestore` to rebuild them.')
+  console.error(
+    '\nSome rounds repeat a category. Reseed with `npm run seed:firestore` to rebuild them.',
+  )
   process.exit(1)
 }
 console.log('OK.')

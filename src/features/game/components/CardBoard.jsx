@@ -1,9 +1,21 @@
 import React, { useState } from 'react'
 import {
-  DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, TouchSensor, closestCenter,
-  defaultDropAnimationSideEffects, useSensor, useSensors,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  defaultDropAnimationSideEffects,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core'
-import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
 import { useI18n } from '../../../i18n/LanguageProvider'
 import { useDustBurst } from '../hooks/useDustBurst'
 import CardContent from './CardContent'
@@ -64,7 +76,14 @@ export default function CardBoard({ cards, reveal, onMove, onReorder }) {
         <SortableContext items={cards.map((card) => card.id)} strategy={rectSortingStrategy}>
           <div className="cards-grid">
             {cards.map((card, index) => (
-              <SortableCard key={card.id} card={card} index={index} count={cards.length} reveal={reveal} onMove={handleMove} />
+              <SortableCard
+                key={card.id}
+                card={card}
+                index={index}
+                count={cards.length}
+                reveal={reveal}
+                onMove={handleMove}
+              />
             ))}
           </div>
         </SortableContext>

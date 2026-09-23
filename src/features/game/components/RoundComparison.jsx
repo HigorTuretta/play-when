@@ -33,11 +33,17 @@ export default function RoundComparison({ cards, correctOrder }) {
         <div className="comparison-rows">
           <ComparisonRow label={t.yourOrder}>
             {cards.map((card, index) => (
-              <Chip key={card.id} card={card} className={correctOrder[index] === card.id ? 'is-hit' : 'is-miss'} />
+              <Chip
+                key={card.id}
+                card={card}
+                className={correctOrder[index] === card.id ? 'is-hit' : 'is-miss'}
+              />
             ))}
           </ComparisonRow>
           <ComparisonRow label={t.rightOrder}>
-            {chronological.map((card) => <Chip key={card.id} card={card} className="is-answer" />)}
+            {chronological.map((card) => (
+              <Chip key={card.id} card={card} className="is-answer" />
+            ))}
           </ComparisonRow>
         </div>
       </div>

@@ -13,7 +13,9 @@ function AttemptMeter({ plays, remaining }) {
     <div className="attempt-meter">
       <span className="meter-label">{t.todayPlays}</span>
       <div className="meter-dots">
-        {Array.from({ length: DAILY_LIMIT }, (_, i) => <span key={i} className={i < plays ? 'is-used' : ''} />)}
+        {Array.from({ length: DAILY_LIMIT }, (_, i) => (
+          <span key={i} className={i < plays ? 'is-used' : ''} />
+        ))}
         <span className="meter-remaining">{t.remainingAttempts(remaining)}</span>
       </div>
     </div>
@@ -33,10 +35,18 @@ export default function HomePage({ onStart }) {
           <h1>{t.startTitle}</h1>
           <p className="lede">{t.startCopy}</p>
           {limitReached ? (
-            <div className="limit-message"><span className="limit-badge" aria-hidden="true">!</span><span>{t.dailyLimit}</span></div>
+            <div className="limit-message">
+              <span className="limit-badge" aria-hidden="true">
+                !
+              </span>
+              <span>{t.dailyLimit}</span>
+            </div>
           ) : (
             <div className="home-start">
-              <button className="primary big" onClick={onStart}><span className="play-glyph" aria-hidden="true" />{t.startGame}</button>
+              <button className="primary big" onClick={onStart}>
+                <span className="play-glyph" aria-hidden="true" />
+                {t.startGame}
+              </button>
               {user && profile && <AttemptMeter plays={daily.plays || 0} remaining={remaining} />}
             </div>
           )}

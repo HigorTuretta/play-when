@@ -21,7 +21,9 @@ export async function resolveImage(query) {
   })
 
   for (let attempt = 1; attempt <= 4; attempt += 1) {
-    const response = await fetch(`${WIKIPEDIA_API}?${params}`, { headers: { 'User-Agent': USER_AGENT } })
+    const response = await fetch(`${WIKIPEDIA_API}?${params}`, {
+      headers: { 'User-Agent': USER_AGENT },
+    })
     const data = response.ok ? await response.json() : null
     if (!data || data.error?.code === 'maxlag') {
       await new Promise((resolve) => setTimeout(resolve, attempt * 2000))
@@ -30,7 +32,9 @@ export async function resolveImage(query) {
 
     const page = Object.values(data.query?.pages || {})
       .filter((candidate) => candidate.thumbnail?.source)
-      .sort((a, b) => (a.index ?? Number.MAX_SAFE_INTEGER) - (b.index ?? Number.MAX_SAFE_INTEGER))[0]
+      .sort(
+        (a, b) => (a.index ?? Number.MAX_SAFE_INTEGER) - (b.index ?? Number.MAX_SAFE_INTEGER),
+      )[0]
 
     if (!page) return null
     const src = new URL(page.thumbnail.source)

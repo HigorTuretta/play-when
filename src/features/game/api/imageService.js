@@ -12,7 +12,9 @@ function preloadBitmap(src, signal) {
 
     const cleanup = () => signal?.removeEventListener('abort', onAbort)
     const finish = async () => {
-      try { await img.decode?.() } catch {}
+      try {
+        await img.decode?.()
+      } catch {}
       cleanup()
       resolve()
     }

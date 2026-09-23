@@ -25,7 +25,15 @@ export default function SortableCard({ card, index, count, reveal, onMove }) {
   const correctIndex = revealed ? reveal.correctOrder.indexOf(card.id) : -1
   const status = !revealed ? '' : correctIndex === index ? 'correct' : 'wrong'
 
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: card.id,
     disabled: revealed,
     animateLayoutChanges,

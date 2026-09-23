@@ -15,7 +15,7 @@ function hashString(value) {
 function mulberry32(seed) {
   let state = seed
   return () => {
-    state += 0x6D2B79F5
+    state += 0x6d2b79f5
     let t = state
     t = Math.imul(t ^ (t >>> 15), t | 1)
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
@@ -51,6 +51,9 @@ export function rankedRoundIds(uid, cursor) {
 }
 
 export function guestRoundIds() {
-  const guestPool = Array.from({ length: ROUND_POOL_SIZE - RANKED_POOL_SIZE }, (_, index) => RANKED_POOL_SIZE + index + 1)
+  const guestPool = Array.from(
+    { length: ROUND_POOL_SIZE - RANKED_POOL_SIZE },
+    (_, index) => RANKED_POOL_SIZE + index + 1,
+  )
   return shuffle(guestPool).slice(0, TOTAL_ROUNDS).map(roundIdFor)
 }

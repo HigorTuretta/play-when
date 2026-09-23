@@ -4,7 +4,7 @@
   gap: 14px;
   flex-wrap: wrap;
   padding: 6px 2px 16px;
-  border-bottom: 1px solid rgba(32,31,28,.13);
+  border-bottom: 1px solid rgba(32, 31, 28, 0.13);
 }
 .brand-button {
   display: flex;
@@ -17,11 +17,12 @@
   font-family: var(--display);
   font-weight: 900;
   font-size: 19px;
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
   color: var(--ink);
 }
 .brand-dot {
-  width: 36px; height: 36px;
+  width: 36px;
+  height: 36px;
   border-radius: 11px;
   display: grid;
   place-items: center;
@@ -31,7 +32,12 @@
   box-shadow: 2px 3px 0 var(--shadow-soft);
   font-size: 17px;
 }
-.main-nav { display: flex; gap: 4px; align-items: center; margin-left: 6px; }
+.main-nav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 6px;
+}
 .main-nav button {
   border: 0;
   background: transparent;
@@ -41,10 +47,22 @@
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  transition: background .2s ease, color .2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
-.main-nav button.active { background: var(--ink); color: var(--paper); box-shadow: 0 2px 0 #cfc6b6; }
-.topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.main-nav button.active {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 2px 0 #cfc6b6;
+}
+.topbar-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
 .streak-chip {
   position: relative;
@@ -60,12 +78,41 @@
   font-weight: 800;
   font-size: 13px;
 }
-.streak-flame { position: relative; width: 14px; height: 14px; display: grid; place-items: center; }
-.streak-flame i { position: absolute; inset: 0; border-radius: 50%; background: var(--ember); animation: flamePulse 1.8s ease-in-out infinite; }
-.streak-flame b { position: relative; width: 6px; height: 6px; border-radius: 50%; background: var(--paper); }
-.streak-value { display: flex; align-items: baseline; gap: 5px; }
-.streak-value strong { font-size: 15px; }
-.streak-value span { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; opacity: .72; }
+.streak-flame {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+}
+.streak-flame i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ember);
+  animation: flamePulse 1.8s ease-in-out infinite;
+}
+.streak-flame b {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+.streak-value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.streak-value strong {
+  font-size: 15px;
+}
+.streak-value span {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
 
 .language-switch {
   display: inline-flex;
@@ -74,8 +121,8 @@
   padding: 4px;
   border: 1px solid #d8d1c3;
   border-radius: 999px;
-  background: rgba(255,253,247,.8);
-  box-shadow: 0 2px 0 rgba(32,31,28,.07);
+  background: rgba(255, 253, 247, 0.8);
+  box-shadow: 0 2px 0 rgba(32, 31, 28, 0.07);
 }
 .language-switch button {
   min-width: 36px;
@@ -86,18 +133,23 @@
   font-family: var(--display);
   font-weight: 800;
   font-size: 11px;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   background: transparent;
   color: var(--muted);
-  transition: background .18s ease, color .18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
 }
-.language-switch button.active { background: var(--ink); color: var(--paper); }
+.language-switch button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
 
 .auth-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(32,31,28,.2);
+  border: 1px solid rgba(32, 31, 28, 0.2);
   background: var(--paper);
   border-radius: 999px;
   min-height: 38px;
@@ -106,28 +158,39 @@
   font-size: 13px;
   color: var(--ink);
   cursor: pointer;
-  box-shadow: 0 3px 0 rgba(32,31,28,.09);
-  transition: transform .16s ease, box-shadow .16s ease;
+  box-shadow: 0 3px 0 rgba(32, 31, 28, 0.09);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
-.auth-button:hover { transform: translateY(-1px); box-shadow: 0 5px 0 rgba(32,31,28,.09); }
+.auth-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 rgba(32, 31, 28, 0.09);
+}
 .account-control {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(32,31,28,.2);
+  border: 1px solid rgba(32, 31, 28, 0.2);
   background: var(--paper);
   border-radius: 999px;
   min-height: 38px;
   padding: 7px 8px 7px 14px;
   font-weight: 700;
   font-size: 13px;
-  box-shadow: 0 3px 0 rgba(32,31,28,.09);
+  box-shadow: 0 3px 0 rgba(32, 31, 28, 0.09);
 }
-.account-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .icon-button {
   border: 0;
   background: var(--surface-muted);
-  width: 26px; height: 26px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -141,7 +204,7 @@
   width: 100%;
   margin-top: 26px;
   padding: 16px 2px 0;
-  border-top: 1px solid rgba(32,31,28,.13);
+  border-top: 1px solid rgba(32, 31, 28, 0.13);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -150,11 +213,26 @@
   color: #7d766c;
   font-size: 12px;
 }
-.site-footer button { border: 0; background: none; color: inherit; cursor: pointer; padding: 0; }
-.site-footer button:hover { color: var(--gold-rank); }
-.site-footer a { font-weight: 800; color: #4f4a43; }
-.site-footer strong { color: #3c3935; }
-.footer-dot { opacity: .45; }
+.site-footer button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.site-footer button:hover {
+  color: var(--gold-rank);
+}
+.site-footer a {
+  font-weight: 800;
+  color: #4f4a43;
+}
+.site-footer strong {
+  color: #3c3935;
+}
+.footer-dot {
+  opacity: 0.45;
+}
 .footer-tagline {
   flex-basis: 100%;
   margin: 0 0 4px;
@@ -162,7 +240,7 @@
   font-family: var(--display);
   font-weight: 800;
   font-size: 13px;
-  letter-spacing: -.01em;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 

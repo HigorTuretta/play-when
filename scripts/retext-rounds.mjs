@@ -8,8 +8,14 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import {
-  ROUND_COUNT, publicCard, resetStaticRoundsDir, roundIdFor, staticRoundsDir, staticRoundsDirFor,
-  STATIC_ROUNDS_VERSION, writeStaticRound,
+  ROUND_COUNT,
+  publicCard,
+  resetStaticRoundsDir,
+  roundIdFor,
+  staticRoundsDir,
+  staticRoundsDirFor,
+  STATIC_ROUNDS_VERSION,
+  writeStaticRound,
 } from './lib/rounds.mjs'
 
 const from = process.argv[2] || 'v1'
@@ -30,4 +36,6 @@ for (let index = 1; index <= ROUND_COUNT; index += 1) {
 }
 
 console.log(`Rewrote ${written} rounds from ${from} into ${path.basename(staticRoundsDir)}.`)
-console.log(`Delete public/rounds/${from} once the new folder looks right: publishing both doubles the deploy.`)
+console.log(
+  `Delete public/rounds/${from} once the new folder looks right: publishing both doubles the deploy.`,
+)

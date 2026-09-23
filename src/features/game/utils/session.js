@@ -46,6 +46,8 @@ export function restoreRound(gameId, round, data) {
   const ids = state.orderIds || []
   if (ids.length !== data.cards.length || !ids.every((id) => byId[id])) return null
 
-  const cards = ids.map((id) => (state.reveal ? { ...byId[id], year: state.years?.[id] } : byId[id]))
+  const cards = ids.map((id) =>
+    state.reveal ? { ...byId[id], year: state.years?.[id] } : byId[id],
+  )
   return { data, cards, reveal: state.reveal || null }
 }

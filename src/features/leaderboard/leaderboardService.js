@@ -15,7 +15,9 @@ export async function getLeaderboard() {
   const cached = readJSON(STORAGE_KEYS.leaderboard)
   if (Array.isArray(cached?.rows) && Date.now() - cached.at < CACHE_TTL_MS) return cached.rows
 
-  const snap = await getDocs(query(collection(db, 'leaderboard'), orderBy('totalScore', 'desc'), limit(LEADERBOARD_SIZE)))
+  const snap = await getDocs(
+    query(collection(db, 'leaderboard'), orderBy('totalScore', 'desc'), limit(LEADERBOARD_SIZE)),
+  )
   const rows = snap.docs.map((item, index) => {
     const { nickname, countryCode, totalScore, gamesPlayed } = item.data()
     return { rank: index + 1, id: item.id, nickname, countryCode, totalScore, gamesPlayed }

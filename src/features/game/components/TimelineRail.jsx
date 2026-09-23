@@ -10,7 +10,9 @@ export default function TimelineRail() {
       <span className="rail-label">{t.oldest}</span>
       <div className="rail-track">
         <span className="rail-line" />
-        {Array.from({ length: ROUND_SIZE }, (_, i) => <span key={i} className="rail-node" />)}
+        {Array.from({ length: ROUND_SIZE }, (_, i) => (
+          <span key={i} className="rail-node" />
+        ))}
       </div>
       <span className="rail-label">{t.newest}</span>
     </div>

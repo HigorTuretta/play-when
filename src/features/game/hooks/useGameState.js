@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import { track } from '../../../lib/analytics'
 import {
-  creditDailyStreak, finishGame, getDailyState, isGameOpen, startGame, startGuestGame, submitGuestRound, submitRound,
+  creditDailyStreak,
+  finishGame,
+  getDailyState,
+  isGameOpen,
+  startGame,
+  startGuestGame,
+  submitGuestRound,
+  submitRound,
 } from '../api/gameService'
 import { preloadEventImage } from '../api/imageService'
 import { getRound } from '../api/roundService'
@@ -65,7 +72,7 @@ export function useGameState({ user, profile }) {
         // account state that no longer exists. Resuming it would make every submission
         // fail against the rules, so a session known to be unplayable is dropped. A check
         // that could not be made keeps the session: submitting will say so soon enough.
-        if (await isGameOpen(uid, saved.game.id) === false) {
+        if ((await isGameOpen(uid, saved.game.id)) === false) {
           clearSession()
           return
         }
@@ -75,7 +82,9 @@ export function useGameState({ user, profile }) {
       })
       .catch(() => alive && setError('generic'))
 
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [uid, hasProfile, resetGame])
 
   useEffect(() => {
@@ -90,16 +99,25 @@ export function useGameState({ user, profile }) {
     getRound(roundId)
       .then(async (data) => {
         if (!alive()) return
-        setRoundState(restoreRound(game.id, round, data) || { data, cards: shuffle(data.cards), reveal: null })
+        setRoundState(
+          restoreRound(game.id, round, data) || { data, cards: shuffle(data.cards), reveal: null },
+        )
 
         let completed = 0
-        await Promise.allSettled(data.cards.map((card) =>
-          preloadEventImage(card, controller.signal).finally(() => {
-            completed += 1
-            if (alive()) setLoading({ active: true, progress: completed })
-          })))
+        await Promise.allSettled(
+          data.cards.map((card) =>
+            preloadEventImage(card, controller.signal).finally(() => {
+              completed += 1
+              if (alive()) setLoading({ active: true, progress: completed })
+            }),
+          ),
+        )
 
-        if (alive()) setTimeout(() => alive() && setLoading({ active: false, progress: completed }), LOADER_SETTLE_MS)
+        if (alive())
+          setTimeout(
+            () => alive() && setLoading({ active: false, progress: completed }),
+            LOADER_SETTLE_MS,
+          )
       })
       .catch(() => alive() && setError('generic'))
 
@@ -107,7 +125,8 @@ export function useGameState({ user, profile }) {
   }, [status, game?.id, round])
 
   useEffect(() => {
-    if (status !== 'playing' || !game || game.guest || !uid || loading.active || !roundState.data) return
+    if (status !== 'playing' || !game || game.guest || !uid || loading.active || !roundState.data)
+      return
     saveSession({ uid, game, round, score, streak, results, roundState })
   }, [status, game, uid, round, score, streak, results, roundState, loading.active])
 
@@ -157,10 +176,15 @@ export function useGameState({ user, profile }) {
     try {
       setBusy(true)
       setError(null)
-      const payload = { roundId: game.roundIds[round], orderedIds: roundState.cards.map((card) => card.id), streakBefore: streak }
-      const result = uid && !game.guest
-        ? await submitRound({ ...payload, uid, gameId: game.id, roundIndex: round })
-        : await submitGuestRound(payload)
+      const payload = {
+        roundId: game.roundIds[round],
+        orderedIds: roundState.cards.map((card) => card.id),
+        streakBefore: streak,
+      }
+      const result =
+        uid && !game.guest
+          ? await submitRound({ ...payload, uid, gameId: game.id, roundIndex: round })
+          : await submitGuestRound(payload)
 
       const revealed = roundState.cards.map((card) => ({ ...card, year: result.years[card.id] }))
       setRoundState((state) => ({
@@ -169,18 +193,21 @@ export function useGameState({ user, profile }) {
         reveal: { correctOrder: result.correctOrder, hits: result.hits, gain: result.score },
       }))
       setStreak(result.streakAfter)
-      setResults((current) => [...current, {
-        round,
-        hits: result.hits,
-        perfect: result.hits === ROUND_SIZE,
-        ordered: revealed,
-        correct: result.correctOrder,
-      }])
+      setResults((current) => [
+        ...current,
+        {
+          round,
+          hits: result.hits,
+          perfect: result.hits === ROUND_SIZE,
+          ordered: revealed,
+          correct: result.correctOrder,
+        },
+      ])
       if (result.score > 0) setScore((value) => value + result.score)
       track('round_submit', { round: round + 1, hits: result.hits, score: result.score })
     } catch (e) {
       console.error('Failed to submit round', e)
-      if (uid && !game.guest && await isGameOpen(uid, game.id) === false) {
+      if (uid && !game.guest && (await isGameOpen(uid, game.id)) === false) {
         clearSession()
         resetGame()
         setStatus('home')
@@ -209,7 +236,11 @@ export function useGameState({ user, profile }) {
 
     try {
       setBusy(true)
-      const finalScore = await finishGame({ uid, gameId: game.id, hits: results.map((result) => result.hits) })
+      const finalScore = await finishGame({
+        uid,
+        gameId: game.id,
+        hits: results.map((result) => result.hits),
+      })
       setScore(finalScore)
       setStatus('finished')
       clearSession()

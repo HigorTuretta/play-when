@@ -1,7 +1,12 @@
 import { initializeApp } from 'firebase/app'
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 import { connectAuthEmulator, getAuth, GoogleAuthProvider } from 'firebase/auth'
-import { connectFirestoreEmulator, getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore'
+import {
+  connectFirestoreEmulator,
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+} from 'firebase/firestore'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 
 const firebaseConfig = {
@@ -21,7 +26,8 @@ export const app = initializeApp(firebaseConfig)
 // site key is configured; enforce it in the Firebase console once its metrics look right.
 const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY
 if (appCheckSiteKey) {
-  if (import.meta.env.DEV) self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
+  if (import.meta.env.DEV)
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
   initializeAppCheck(app, {
     provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
@@ -50,6 +56,6 @@ if (import.meta.env.VITE_USE_EMULATORS === 'true') {
 export function getAnalyticsInstance() {
   if (!firebaseConfig.measurementId) return Promise.resolve(null)
   return isSupported()
-    .then((supported) => supported ? getAnalytics(app) : null)
+    .then((supported) => (supported ? getAnalytics(app) : null))
     .catch(() => null)
 }

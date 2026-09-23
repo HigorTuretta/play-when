@@ -31,8 +31,15 @@ export default function Header() {
         <span>{t.gameName}</span>
       </button>
       <nav className="main-nav">
-        <button className={path === ROUTES.home ? 'active' : ''} onClick={goHome}>{t.home}</button>
-        <button className={path === ROUTES.leaderboard ? 'active' : ''} onClick={() => navigate(ROUTES.leaderboard)}>{t.leaderboard}</button>
+        <button className={path === ROUTES.home ? 'active' : ''} onClick={goHome}>
+          {t.home}
+        </button>
+        <button
+          className={path === ROUTES.leaderboard ? 'active' : ''}
+          onClick={() => navigate(ROUTES.leaderboard)}
+        >
+          {t.leaderboard}
+        </button>
       </nav>
       <div className="topbar-tools">
         {user && profile && daily.streak > 0 && <StreakChip value={daily.streak} />}

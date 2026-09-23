@@ -18,7 +18,10 @@ function ScorePill({ score }) {
 
     const id = Date.now()
     setGain({ id, value: diff })
-    const timer = setTimeout(() => setGain((current) => (current?.id === id ? null : current)), GAIN_VISIBLE_MS)
+    const timer = setTimeout(
+      () => setGain((current) => (current?.id === id ? null : current)),
+      GAIN_VISIBLE_MS,
+    )
     return () => clearTimeout(timer)
   }, [score])
 
@@ -27,7 +30,11 @@ function ScorePill({ score }) {
       <span className="score-mark" aria-hidden="true" />
       <span className="score-value">{displayed}</span>
       <span className="score-unit">{t.pointsShort}</span>
-      {gain && <span key={gain.id} className="score-float">+{gain.value}</span>}
+      {gain && (
+        <span key={gain.id} className="score-float">
+          +{gain.value}
+        </span>
+      )}
     </div>
   )
 }
@@ -43,7 +50,10 @@ export default function GameHeader({ round, streak, score }) {
         <p className="subtitle">{t.gameSubtitle}</p>
       </div>
       <div className="game-head-right">
-        <div className="streak-card"><span>{t.streak}</span><strong>{streak}x</strong></div>
+        <div className="streak-card">
+          <span>{t.streak}</span>
+          <strong>{streak}x</strong>
+        </div>
         <ScorePill score={score} />
       </div>
     </section>

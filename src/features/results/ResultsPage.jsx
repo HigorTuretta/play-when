@@ -31,7 +31,9 @@ export default function ResultsPage({ onPlayAgain }) {
     <section className="finish-card">
       <span className="finish-blob" aria-hidden="true" />
       <div className="finish-inner">
-        <div className="page-badge" aria-hidden="true">★</div>
+        <div className="page-badge" aria-hidden="true">
+          ★
+        </div>
         <p className="eyebrow">{t.endGame}</p>
         <h1>{score >= GREAT_SCORE ? t.finishGreat : t.finishTry}</h1>
 
@@ -47,7 +49,9 @@ export default function ResultsPage({ onPlayAgain }) {
         {!isRanked && (
           <div className="login-callout">
             <strong>{t.loginToSave}</strong>
-            <button className="primary small" onClick={login}>{t.signIn}</button>
+            <button className="primary small" onClick={login}>
+              {t.signIn}
+            </button>
           </div>
         )}
 
@@ -55,11 +59,20 @@ export default function ResultsPage({ onPlayAgain }) {
 
         <div className="finish-actions">
           {limitReached ? (
-            <div className="limit-message"><span className="limit-badge" aria-hidden="true">!</span><span>{t.completedToday}</span></div>
+            <div className="limit-message">
+              <span className="limit-badge" aria-hidden="true">
+                !
+              </span>
+              <span>{t.completedToday}</span>
+            </div>
           ) : (
-            <button className="primary" onClick={onPlayAgain}>{signedIn ? t.playAgain(remaining) : t.startGame}</button>
+            <button className="primary" onClick={onPlayAgain}>
+              {signedIn ? t.playAgain(remaining) : t.startGame}
+            </button>
           )}
-          <button className="outline" onClick={() => navigate(ROUTES.leaderboard)}>{t.leaderboard}</button>
+          <button className="outline" onClick={() => navigate(ROUTES.leaderboard)}>
+            {t.leaderboard}
+          </button>
         </div>
       </div>
     </section>

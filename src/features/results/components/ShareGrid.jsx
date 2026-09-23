@@ -31,7 +31,9 @@ export default function ShareGrid({ results, score }) {
                 <span
                   key={cellIndex}
                   className={`share-cell ${hit ? 'is-hit' : 'is-miss'}`}
-                  style={{ '--share-delay': `${(rowIndex * row.length + cellIndex) * CELL_STAGGER_MS}ms` }}
+                  style={{
+                    '--share-delay': `${(rowIndex * row.length + cellIndex) * CELL_STAGGER_MS}ms`,
+                  }}
                 />
               ))}
             </div>
@@ -40,7 +42,9 @@ export default function ShareGrid({ results, score }) {
       </div>
       <div className="share-side">
         <p>{t.shareCopy}</p>
-        <button className="outline" onClick={copy}>{copied ? t.copied : t.copyShare}</button>
+        <button className="outline" onClick={copy}>
+          {copied ? t.copied : t.copyShare}
+        </button>
       </div>
     </section>
   )

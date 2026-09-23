@@ -1,4 +1,5 @@
-export const GITHUB_URL = import.meta.env.VITE_GITHUB_URL || 'https://github.com/HigorTuretta/play-when'
+export const GITHUB_URL =
+  import.meta.env.VITE_GITHUB_URL || 'https://github.com/HigorTuretta/play-when'
 
 export const STORAGE_KEYS = {
   // v2: sessions saved before the ranked/guest round pools were split cannot be resumed.

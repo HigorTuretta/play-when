@@ -18,9 +18,13 @@ export default function SiteFooter() {
       <Dot />
       <button onClick={() => navigate(ROUTES.terms)}>{t.terms}</button>
       <Dot />
-      <span>{t.developedBy} <strong>Turetta</strong></span>
+      <span>
+        {t.developedBy} <strong>Turetta</strong>
+      </span>
       <Dot />
-      <a href={GITHUB_URL} target="_blank" rel="noreferrer">{t.github}</a>
+      <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+        {t.github}
+      </a>
     </footer>
   )
 }

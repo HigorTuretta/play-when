@@ -19,7 +19,9 @@ function SummaryCard({ card, hit }) {
         aria-hidden="true"
       />
       <span className="summary-text">
-        <span className={`summary-year ${hit ? 'is-hit' : 'is-miss'}`}>{formatYear(card.year)}</span>
+        <span className={`summary-year ${hit ? 'is-hit' : 'is-miss'}`}>
+          {formatYear(card.year)}
+        </span>
         <span className="summary-title">{textForEvent(card, language).title}</span>
       </span>
     </div>
@@ -44,7 +46,9 @@ export default function ResultSummary({ results }) {
             <div key={round.round} className="summary-row">
               <span className="summary-label">{t.roundLabel(round.round + 1)}</span>
               <div className="summary-cards">
-                {chronological.map((card) => <SummaryCard key={card.id} card={card} hit={wasHit(card)} />)}
+                {chronological.map((card) => (
+                  <SummaryCard key={card.id} card={card} hit={wasHit(card)} />
+                ))}
               </div>
             </div>
           )

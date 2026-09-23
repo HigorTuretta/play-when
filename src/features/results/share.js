@@ -18,7 +18,9 @@ function copyWithTextarea(text) {
   area.style.opacity = '0'
   document.body.appendChild(area)
   area.select()
-  try { document.execCommand('copy') } catch {}
+  try {
+    document.execCommand('copy')
+  } catch {}
   document.body.removeChild(area)
 }
 

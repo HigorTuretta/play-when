@@ -12,21 +12,25 @@ export function AuthProvider({ children }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => observeAuth(async (nextUser) => {
-    setTrackingEnabled(Boolean(nextUser))
-    setUser(nextUser)
-    setError(null)
-    if (nextUser) {
-      try {
-        setProfile(await getProfile(nextUser.uid))
-      } catch {
-        setError('generic')
-      }
-    } else {
-      setProfile(null)
-    }
-    setReady(true)
-  }), [])
+  useEffect(
+    () =>
+      observeAuth(async (nextUser) => {
+        setTrackingEnabled(Boolean(nextUser))
+        setUser(nextUser)
+        setError(null)
+        if (nextUser) {
+          try {
+            setProfile(await getProfile(nextUser.uid))
+          } catch {
+            setError('generic')
+          }
+        } else {
+          setProfile(null)
+        }
+        setReady(true)
+      }),
+    [],
+  )
 
   const login = useCallback(async () => {
     try {
@@ -40,18 +44,21 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => signOutUser(), [])
 
-  const saveNickname = useCallback(async (nickname) => {
-    if (!user) return
-    try {
-      setBusy(true)
-      setProfile(await createProfile(user, nickname))
-      track('sign_up', { method: 'google' })
-    } catch {
-      setError('generic')
-    } finally {
-      setBusy(false)
-    }
-  }, [user])
+  const saveNickname = useCallback(
+    async (nickname) => {
+      if (!user) return
+      try {
+        setBusy(true)
+        setProfile(await createProfile(user, nickname))
+        track('sign_up', { method: 'google' })
+      } catch {
+        setError('generic')
+      } finally {
+        setBusy(false)
+      }
+    },
+    [user],
+  )
 
   const value = useMemo(
     () => ({ user, profile, ready, busy, error, login, logout, saveNickname }),

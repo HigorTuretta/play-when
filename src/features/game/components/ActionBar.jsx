@@ -27,12 +27,19 @@ export default function ActionBar({ reveal, busy, isLastRound, onSubmit, onNext 
       {reveal ? (
         <>
           <RoundFeedback hits={reveal.hits} gain={reveal.gain} />
-          <button className="primary" onClick={onNext} disabled={busy}>{isLastRound ? t.seeResult : t.nextRound} →</button>
+          <button className="primary" onClick={onNext} disabled={busy}>
+            {isLastRound ? t.seeResult : t.nextRound} →
+          </button>
         </>
       ) : (
         <>
-          <p className="drag-hint"><span className="drag-hint-text">{t.dragHint}</span><small>{t.imageDisclaimer}</small></p>
-          <button className="primary" onClick={onSubmit} disabled={busy}>{t.submit} ✓</button>
+          <p className="drag-hint">
+            <span className="drag-hint-text">{t.dragHint}</span>
+            <small>{t.imageDisclaimer}</small>
+          </p>
+          <button className="primary" onClick={onSubmit} disabled={busy}>
+            {t.submit} ✓
+          </button>
         </>
       )}
     </section>

@@ -11,5 +11,7 @@ export async function track(name, params = {}) {
   if (!trackingEnabled) return
   const analytics = await getAnalyticsInstance()
   if (!analytics) return
-  try { logEvent(analytics, name, params) } catch {}
+  try {
+    logEvent(analytics, name, params)
+  } catch {}
 }

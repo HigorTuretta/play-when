@@ -27,10 +27,8 @@ const gameRef = (uid, gameId) => doc(db, 'users', uid, 'games', gameId)
 const attemptRef = (uid, roundId) => doc(db, 'attempts', recordIdFor(uid, roundId))
 const toDate = (timestamp) => timestamp?.toDate?.() || null
 
-const submissionError = (stage, error) => new Error(
-  `${stage}: ${error?.code || error?.message || 'unknown-error'}`,
-  { cause: error },
-)
+const submissionError = (stage, error) =>
+  new Error(`${stage}: ${error?.code || error?.message || 'unknown-error'}`, { cause: error })
 
 function toDailyState(data = {}, now = new Date()) {
   const day = toDate(data.day)
@@ -99,7 +97,11 @@ export async function creditDailyStreak(uid, daily) {
   if (lastPlayedAt && isSameDay(lastPlayedAt, now)) return daily
 
   const streak = nextStreak(storedStreak, lastPlayedAt, now)
-  await updateDoc(dailyRef(uid), { streak, lastPlayedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+  await updateDoc(dailyRef(uid), {
+    streak,
+    lastPlayedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
   return { ...daily, streak, storedStreak: streak, lastPlayedAt: now }
 }
 
@@ -162,9 +164,10 @@ export async function startGame(uid) {
         // retried because another device moved the cursor, the walk no longer says where
         // this player is, so the block at the cursor just read is dealt instead; the loop
         // walks again if the rules refuse it.
-        const selection = walk?.from === cursor
-          ? walk
-          : { roundIds: rankedRoundIds(uid, cursor), cursor: cursor + TOTAL_ROUNDS }
+        const selection =
+          walk?.from === cursor
+            ? walk
+            : { roundIds: rankedRoundIds(uid, cursor), cursor: cursor + TOTAL_ROUNDS }
         if (selection.roundIds.some((roundId) => !roundId)) throw new Error('pool-exhausted')
         const plays = daily.plays + 1
 
@@ -176,15 +179,22 @@ export async function startGame(uid) {
           createdAt: serverTimestamp(),
           completedAt: null,
         })
-        tx.set(dailyRef(uid), {
-          day: serverTimestamp(),
-          plays,
-          currentGameId: id,
-          roundCursor: selection.cursor,
-          updatedAt: serverTimestamp(),
-        }, { merge: true })
+        tx.set(
+          dailyRef(uid),
+          {
+            day: serverTimestamp(),
+            plays,
+            currentGameId: id,
+            roundCursor: selection.cursor,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        )
 
-        return { game: { id, roundIds: selection.roundIds, guest: false }, daily: { ...daily, plays } }
+        return {
+          game: { id, roundIds: selection.roundIds, guest: false },
+          daily: { ...daily, plays },
+        }
       })
     } catch (error) {
       if (error?.code !== 'permission-denied') throw error
@@ -210,7 +220,8 @@ export async function submitRound({ uid, gameId, roundId, roundIndex, orderedIds
   const attempt = await createOrResume(
     attemptRef(uid, roundId),
     { uid, gameId, roundId, roundIndex, orderedIds, createdAt: serverTimestamp() },
-    (stored) => stored.gameId === gameId && stored.roundId === roundId && stored.roundIndex === roundIndex,
+    (stored) =>
+      stored.gameId === gameId && stored.roundId === roundId && stored.roundIndex === roundIndex,
     'attempt',
   )
 
@@ -231,15 +242,29 @@ async function restoreLeaderboardEntry(uid) {
 
   const { nickname, countryCode } = profile.data()
   await setDoc(doc(db, 'leaderboard', uid), {
-    nickname, countryCode, totalScore: 0, gamesPlayed: 0, updatedAt: serverTimestamp(),
+    nickname,
+    countryCode,
+    totalScore: 0,
+    gamesPlayed: 0,
+    updatedAt: serverTimestamp(),
   })
   return true
 }
 
 function commitFinish({ uid, gameId, score, hits }) {
   const batch = writeBatch(db)
-  batch.update(gameRef(uid, gameId), { score, hits, completed: true, completedAt: serverTimestamp() })
-  batch.set(doc(db, 'scoreCredits', `${uid}_${gameId}`), { uid, gameId, score, createdAt: serverTimestamp() })
+  batch.update(gameRef(uid, gameId), {
+    score,
+    hits,
+    completed: true,
+    completedAt: serverTimestamp(),
+  })
+  batch.set(doc(db, 'scoreCredits', `${uid}_${gameId}`), {
+    uid,
+    gameId,
+    score,
+    createdAt: serverTimestamp(),
+  })
   batch.update(doc(db, 'leaderboard', uid), {
     totalScore: increment(score),
     gamesPlayed: increment(1),
@@ -258,7 +283,7 @@ export async function finishGame({ uid, gameId, hits }) {
     await commitFinish({ uid, gameId, score, hits })
   } catch (error) {
     if (error?.code !== 'permission-denied') throw error
-    if (!await restoreLeaderboardEntry(uid)) throw error
+    if (!(await restoreLeaderboardEntry(uid))) throw error
     await commitFinish({ uid, gameId, score, hits })
   }
 

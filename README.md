@@ -6,7 +6,7 @@
 
 ### Six rounds. Four cards. One timeline.
 
-**Você sabe *quando* aconteceu… ou só acha que sabe?**
+**Você sabe _quando_ aconteceu… ou só acha que sabe?**
 
 [![Jogar agora](https://img.shields.io/badge/▶_Jogar_agora-201f1c?style=for-the-badge)](https://playwhen.netlify.app/)
 
@@ -30,7 +30,7 @@
 
 > Quatro acontecimentos aparecem embaralhados. Coloque do **mais antigo** para o **mais recente**. O ano só aparece depois que você confirma.
 
-Parece fácil até o jogo perguntar o que veio primeiro: o **Cubo de Rubik**, o **Pong** ou a **Torre Eiffel**. (Spoiler: a Torre Eiffel está *bem* na frente. O Pong e o Cubo são separados por dois anos e muita falsa confiança.)
+Parece fácil até o jogo perguntar o que veio primeiro: o **Cubo de Rubik**, o **Pong** ou a **Torre Eiffel**. (Spoiler: a Torre Eiffel está _bem_ na frente. O Pong e o Cubo são separados por dois anos e muita falsa confiança.)
 
 São **500 fatos** e contando, misturando história, ciência, tecnologia, espaço, games, cinema, música, esportes, internet e Brasil. Com milhares de combinações possíveis, dificilmente você vai decorar as respostas.
 
@@ -49,7 +49,7 @@ São **500 fatos** e contando, misturando história, ciência, tecnologia, espa�
 
 **2. Confirme.** Quando a linha do tempo fizer sentido na sua cabeça, confirme a ordem.
 
-**3. Encare a verdade.** Os anos aparecem *sem* reorganizar nada, então dá para ver exatamente onde a sua intuição tropeçou.
+**3. Encare a verdade.** Os anos aparecem _sem_ reorganizar nada, então dá para ver exatamente onde a sua intuição tropeçou.
 
 </td>
 </tr>
@@ -72,11 +72,11 @@ When? — 470 pts
 
 ## 🏆 Pontuação
 
-| Situação | Pontos |
-| --- | --- |
-| Cada carta na posição certa | **+25** |
-| Rodada perfeita (4/4) | **+50** de bônus |
-| Rodadas perfeitas seguidas | **+20** por perfeito anterior na sequência |
+| Situação                    | Pontos                                     |
+| --------------------------- | ------------------------------------------ |
+| Cada carta na posição certa | **+25**                                    |
+| Rodada perfeita (4/4)       | **+50** de bônus                           |
+| Rodadas perfeitas seguidas  | **+20** por perfeito anterior na sequência |
 
 Errou uma carta? A sequência de perfeitos volta a zero. A história não perdoa.
 
@@ -131,15 +131,15 @@ Os detalhes completos ficam nas páginas de **Política de Privacidade** e **Ter
 
 ## 🧱 Por baixo do capô
 
-| Camada | Tecnologia |
-| --- | --- |
-| Interface | React 18 + Vite 6 |
-| Arrastar e soltar | dnd-kit (core + sortable) |
-| Autenticação | Firebase Authentication (Google) |
-| Dados e ranking | Cloud Firestore, com regras de segurança validando a pontuação |
-| Métricas | Firebase Analytics (apenas para usuários logados) |
-| Ícones | lucide-react |
-| Hospedagem | Firebase Hosting |
+| Camada            | Tecnologia                                                     |
+| ----------------- | -------------------------------------------------------------- |
+| Interface         | React 18 + Vite 6                                              |
+| Arrastar e soltar | dnd-kit (core + sortable)                                      |
+| Autenticação      | Firebase Authentication (Google)                               |
+| Dados e ranking   | Cloud Firestore, com regras de segurança validando a pontuação |
+| Métricas          | Firebase Analytics (apenas para usuários logados)              |
+| Ícones            | lucide-react                                                   |
+| Hospedagem        | Firebase Hosting                                               |
 
 ### Estrutura do projeto
 
@@ -186,17 +186,17 @@ cp .env.example .env
 npm run dev
 ```
 
-| Script | O que faz |
-| --- | --- |
-| `npm run dev` | Servidor de desenvolvimento com hot reload |
-| `npm run build` | Build de produção em `dist/` |
-| `npm run preview` | Serve o build localmente |
-| `npm run seed:firestore` | Popula `facts/`, `rounds/`, `roundAnswers/` e `public/rounds/` a partir de `private-data/facts.json` |
-| `npm run export:rounds` | Regenera `public/rounds/` a partir do que já está no Firestore (sem `facts.json` em mãos) |
-| `npm run validate:facts` | Valida `private-data/facts.json` (duplicatas, datas, referências, títulos em inglês) |
+| Script                    | O que faz                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`             | Servidor de desenvolvimento com hot reload                                                                       |
+| `npm run build`           | Build de produção em `dist/`                                                                                     |
+| `npm run preview`         | Serve o build localmente                                                                                         |
+| `npm run seed:firestore`  | Popula `facts/`, `rounds/`, `roundAnswers/` e `public/rounds/` a partir de `private-data/facts.json`             |
+| `npm run export:rounds`   | Regenera `public/rounds/` a partir do que já está no Firestore (sem `facts.json` em mãos)                        |
+| `npm run validate:facts`  | Valida `private-data/facts.json` (duplicatas, datas, referências, títulos em inglês)                             |
 | `npm run validate:rounds` | Valida o que está publicado em `public/rounds/` (uma carta por categoria, sem repetir evento, sem ano no título) |
-| `npm run retext:rounds` | Reescreve só o texto das cartas publicadas a partir de `data/event-titles-*.json`, sem reseed |
-| `npm run emulators` | Sobe os emuladores de Auth + Firestore (projeto `demo-play-when`, isolado da produção) |
+| `npm run retext:rounds`   | Reescreve só o texto das cartas publicadas a partir de `data/event-titles-*.json`, sem reseed                    |
+| `npm run emulators`       | Sobe os emuladores de Auth + Firestore (projeto `demo-play-when`, isolado da produção)                           |
 
 | `npm run dev:emulators` | Servidor de desenvolvimento apontando para os emuladores acima |
 | `npm run test:rules` | Roda os testes das Security Rules (`tests/firestore.rules.test.mjs`) no emulador |
